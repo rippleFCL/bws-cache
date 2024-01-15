@@ -1,0 +1,5 @@
+flask
+flask-restful
+setuptools
+setuptools_rust
+python-dateutil
