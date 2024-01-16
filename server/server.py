@@ -40,8 +40,6 @@ client = BitwardenClient(client_settings_from_dict({
 }))
 
 
-
-
 auth_token_file = os.environ.get("SECRET_TOKEN_PATH", "")
 if auth_token_file:
     with open(auth_token_file, 'r', encoding="utf-8") as f:
@@ -56,6 +54,7 @@ secret_key_mapping_refresh_timeout = int(os.environ.get("SECRET_KEY_MAPPING_REFR
 
 
 client.access_token_login(bws_auth_token)
+
 
 secret_cache = dict()
 
@@ -110,4 +109,4 @@ api.add_resource(BwsCache, '/bws-cache/<string:secret_id_type>/<string:secret_id
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, listen="0.0.0.0")
