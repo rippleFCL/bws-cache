@@ -1,27 +1,28 @@
 FROM node:lts as builder
 
 ARG BWS_SDK_VERSION=0.4.0 \
-    RUST_VERSION=1.75.0 \
-    RUSTUP_HOME=/usr/local/rustup \
+    RUST_VERSION=1.75.0
+
+ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH
 
 # Install Rust
-RUN dpkgArch="$(dpkg --print-architecture)"; \
+RUN dpkgArch="$(dpkg --print-architecture)" &&\
     case "${dpkgArch##*-}" in \
         amd64) rustArch='x86_64-unknown-linux-gnu' ;; \
         armhf) rustArch='armv7-unknown-linux-gnueabihf' ;; \
         arm64) rustArch='aarch64-unknown-linux-gnu' ;; \
         *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
-    esac; \
-    url="https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init"; \
-    wget "$url"; \
-    chmod +x rustup-init; \
-    ./rustup-init -y --no-modify-path --profile minimal --default-host ${rustArch}; \
-    rm rustup-init; \
-    chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
-    rustup --version; \
-    cargo --version; \
+    esac &&\
+    url="https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" &&\
+    wget "$url" &&\
+    chmod +x rustup-init &&\
+    ./rustup-init -y --no-modify-path --profile minimal --default-host ${rustArch} &&\
+    rm rustup-init &&\
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME &&\
+    rustup --version &&\
+    cargo --version &&\
     rustc --version;
 
 # Clone BWS SDK
