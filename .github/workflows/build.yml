@@ -53,6 +53,11 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         annotations: ${{ steps.meta.outputs.annotations }}
         platforms: linux/amd64,linux/arm64
-        cache-from: type=gha
+        # Build cache is scoped to branches by default.
+        # We use the main branch as a fallback if there's no cache for the existing branch.
+        # https://stackoverflow.com/a/77127188/5209106
+        cache-from: |
+          type=gha
+          type=gha,scope=main
         cache-to: type=gha,mode=max
         provenance: false
