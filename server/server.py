@@ -1,17 +1,18 @@
-from flask import Flask, request, Response, make_response
-from flask.json.provider import _default as _json_default
-from flask_restful import Api, Resource
-
-from bitwarden_sdk.bitwarden_client import BitwardenClient
-from bitwarden_sdk.schemas import client_settings_from_dict, DeviceType, SecretResponse
-import os
-import functools
-import time
-
-
-from json import JSONEncoder, dumps
+from bitwarden_sdk.schemas import SecretResponse
+from client import BWSClientManager, InvalidTokenException, UnauthorizedTokenException, BWSAPIRateLimitExceededException
 from datetime import datetime
+from flask import Flask, request
+from flask_restful import Api, Resource
+from flask.json.provider import _default as _json_default
+from json import JSONEncoder, dumps
 from typing import Any
+import functools
+import os
+import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 class BWJSONEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
@@ -32,81 +33,49 @@ app.config["RESTFUL_JSON"] = {
     "cls": BWJSONEncoder
 }
 
-client = BitwardenClient(client_settings_from_dict({
-    "apiUrl": "https://api.bitwarden.com",
-    "deviceType": DeviceType.SDK,
-    "identityUrl": "https://identity.bitwarden.com",
-    "userAgent": "Python",
-}))
+
+secret_info_ttl = int(os.environ.get("SECRET_TTL", "0"))
+
+client_manager = BWSClientManager(secret_info_ttl)
 
 
-auth_token_file = os.environ.get("SECRET_TOKEN_PATH", "")
-if auth_token_file:
-    with open(auth_token_file, 'r', encoding="utf-8") as f:
-        auth_token = f.read()
-else:
-    auth_token = os.environ.get("SECRET_TOKEN", "")
-
-bws_auth_token = os.environ.get("BWS_ACCESS_TOKEN", "")
-bws_org_id = os.environ.get("BWS_ORG_ID", "")
-
-secret_key_mapping_refresh_timeout = int(os.environ.get("SECRET_KEY_MAPPING_REFRESH_TIMEOUT", "0"))
-
-
-client.access_token_login(bws_auth_token)
-
-
-secret_cache = dict()
-
-count_innit = 0
-
-def update_secret_key_mapping():
-    print("yippeee")
-    key_mapping = dict()
-    for secret in client.secrets().list(bws_org_id).data.data:
-        key_mapping[secret.key] = secret.id
-
-    return key_mapping
-
-secret_key_mapping = update_secret_key_mapping()
-secret_key_mapping_refresh = time.time()
-
-
-def validate_auth(func):
+def handle_api_errors(func):
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer ") and auth_token == auth_header.split()[-1]:
-            return func(*args, **kwargs)
-        return "", 401
-
+        if auth_header.startswith("Bearer "):
+            try:
+                return func(self, auth_header.split()[-1], *args, **kwargs)
+            except InvalidTokenException:
+                return {"error": "invalid token"}, 400
+            except UnauthorizedTokenException:
+                return {"error": "unauthorized token"}, 401
+            except BWSAPIRateLimitExceededException:
+                return {"error": "rate limited"}, 429
+            
+        return {"error": "invalid auth header"}, 400
     return wrapper
 
-class BwsCache(Resource):
-    @validate_auth
-    def get(self, secret_id_type, secret_id):
-        st = time.time()
-        if secret_id_type == "key":
-            global secret_key_mapping_refresh
-            global secret_key_mapping
-            if time.time() - secret_key_mapping_refresh > secret_key_mapping_refresh_timeout:
-                secret_key_mapping = update_secret_key_mapping()
-                secret_key_mapping_refresh = time.time()
-            secret_id = secret_key_mapping[secret_id]
-        cached_secret = secret_cache.get(secret_id, None)
-        if cached_secret is None:
-            print("cache miss")
-            try:
 
-                secret_cache[secret_id] = client.secrets().get(secret_id).data
-            except Exception as e:
-                return {"error status": e.args[0]}, 500
-        print(secret_cache[secret_id].__dict__)
-        return secret_cache[secret_id]
+class BwsCacheId(Resource):
+    @handle_api_errors
+    def get(self, auth_token, secret_id):
+        with client_manager.get_client_by_token(auth_token) as client:
+            client.authenticate()
+            return client.get_secret_by_id(secret_id)
 
 
-api.add_resource(BwsCache, '/bws-cache/<string:secret_id_type>/<string:secret_id>')
+class BwsCacheKey(Resource):
+    @handle_api_errors
+    def get(self, auth_token, org_id, secret_id):
+        with client_manager.get_client_by_token(auth_token) as client:
+            client.authenticate()
+            return client.get_secret_by_key(secret_id, org_id)
+
+
+api.add_resource(BwsCacheId, '/id/<string:secret_id>')
+api.add_resource(BwsCacheKey, '/key/<string:org_id>/<string:secret_id>')
 
 
 if __name__ == '__main__':
-    app.run(debug=True, listen="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=5000)

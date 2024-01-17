@@ -1,3 +1,2 @@
 setuptools
 setuptools_rust
-python-dateutil
