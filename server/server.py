@@ -52,7 +52,7 @@ def handle_api_errors(func):
                 return {"error": "unauthorized token"}, 401
             except BWSAPIRateLimitExceededException:
                 return {"error": "rate limited"}, 429
-            
+
         return {"error": "invalid auth header"}, 400
     return wrapper
 
@@ -67,14 +67,15 @@ class BwsCacheId(Resource):
 
 class BwsCacheKey(Resource):
     @handle_api_errors
-    def get(self, auth_token, org_id, secret_id):
+    def get(self, auth_token, secret_id, ):
+        org_id=os.environ.get("ORG_ID", request.headers.get("OrganizationId", ""))
         with client_manager.get_client_by_token(auth_token) as client:
             client.authenticate()
             return client.get_secret_by_key(secret_id, org_id)
 
 
 api.add_resource(BwsCacheId, '/id/<string:secret_id>')
-api.add_resource(BwsCacheKey, '/key/<string:org_id>/<string:secret_id>')
+api.add_resource(BwsCacheKey, '/key/<string:secret_id>')
 
 
 if __name__ == '__main__':
