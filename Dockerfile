@@ -65,7 +65,7 @@ WORKDIR /app
 
 COPY server/reqs.txt .
 
-RUN pip install -r reqs.txt &&\
+RUN pip install --no-cache-dir -r reqs.txt &&\
     mkdir bitwarden_sdk
 
 COPY server/ .
