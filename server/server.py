@@ -10,9 +10,19 @@ import functools
 import os
 import logging
 
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 logger = logging.getLogger(__name__)
 
+debug = os.environ.get('DEBUG', False)
+if debug:
+    logger.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 class BWJSONEncoder(JSONEncoder):
     def default(self, o: Any) -> Any:
@@ -79,4 +89,4 @@ api.add_resource(BwsCacheKey, '/key/<string:secret_id>')
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=debug, host="0.0.0.0", port=5000)

@@ -4,9 +4,19 @@ import time
 from threading import Lock
 import logging
 import functools
+import os
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+
+debug = True if os.environ.get('DEBUG', False) == "true" else False
+
+if debug:
+    logger.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 class InvalidTokenException(Exception):
     pass
@@ -39,6 +49,7 @@ class BWSClient:
 
     def authenticate(self):
         try:
+            logger.debug("authenticating client")
             self.bws_client.access_token_login(self.bws_token, f"/tmp/token_{hash(self.bws_token)}") #fixme: when rapid requests made with valid but expired token, this line hangs indefinitely
         except Exception as e:
             if "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
@@ -84,6 +95,7 @@ class BWSClient:
 
     def get_secret_by_key(self, secret_key, org_id):
         if not self.secret_key_map or time.time() - self.secret_key_map_refresh > self.secret_info_ttl:
+            logger.debug("regenerating secret key map")
             self._gen_secret_key_map(org_id)
         return self.get_secret_by_id(self.secret_key_map[secret_key])
 
@@ -109,5 +121,3 @@ class BWSClientManager:
             client = BWSClient(self.bws_client, bws_secret_token, self.client_lock, self.secret_info_ttl)
             self.clients[bws_secret_token] = client
         return client
-
-
