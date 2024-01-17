@@ -62,10 +62,12 @@ ENV LOG_LEVEL=INFO
 
 WORKDIR /app
 
-COPY server/ .
+COPY server/reqs.txt .
 
 RUN pip install -r reqs.txt &&\
     mkdir bitwarden_sdk
+
+COPY server/ .
 
 COPY --from=builder /sdk/languages/python/bitwarden_py.so .
 COPY --from=builder /sdk/languages/python/bitwarden_sdk bitwarden_sdk
