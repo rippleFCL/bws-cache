@@ -42,10 +42,8 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
         tags: |
-            type=semver,pattern={{version}},enable={{is_default_branch}}
-            type=semver,pattern={{major}}.{{minor}},enable={{is_default_branch}}
-            type=semver,pattern={{major}},enable={{is_default_branch}}
-            type=ref,event=pr
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=ref,event=pr
 
     - name: Build and push image
       uses: docker/build-push-action@v5
