@@ -39,11 +39,13 @@ RUN cargo build --package bitwarden-py --release
 RUN npm ci &&\
     npm run schemas
 
+COPY build-reqs.txt .
+
 # Compile Python bindings
 RUN apt update &&\
     apt install -y python3-pip &&\
     rm /usr/lib/python3.*/EXTERNALLY-MANAGED || true &&\
-    pip install setuptools setuptools_rust python-dateutil &&\
+    pip install -r build-reqs.txt &&\
     cd languages/python &&\
     python3 setup.py develop &&\
     mv bitwarden_py.*.so bitwarden_py.so &&\
