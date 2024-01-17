@@ -1,2 +1,2 @@
 setuptools
-setuptools_rust
+setuptools-rust==1.8.1
