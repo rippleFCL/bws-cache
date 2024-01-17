@@ -23,7 +23,7 @@ RUN dpkgArch="$(dpkg --print-architecture)" &&\
     chmod -R a+w $RUSTUP_HOME $CARGO_HOME &&\
     rustup --version &&\
     cargo --version &&\
-    rustc --version;
+    rustc --version
 
 # Clone BWS SDK
 RUN git clone https://github.com/bitwarden/sdk.git &&\
@@ -33,7 +33,7 @@ RUN git clone https://github.com/bitwarden/sdk.git &&\
 WORKDIR /sdk
 
 # Compile Rust package
-RUN cargo build
+RUN cargo build --package bitwarden-py --release
 
 # Generate schemas
 RUN npm ci &&\
