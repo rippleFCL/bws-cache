@@ -1,7 +1,9 @@
-FROM node:lts as builder
+FROM node:20.11 as builder
 
-ARG BWS_SDK_VERSION=0.4.0 \
-    RUST_VERSION=1.75.0
+# renovate: datasource=github-releases depName=bitwarden/sdk
+ARG BWS_SDK_VERSION=0.4.0
+# renovate: datasource=github-releases depName=rust-lang/rust
+ARG RUST_VERSION=1.75.0
 
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
