@@ -44,7 +44,7 @@ app.config["RESTFUL_JSON"] = {
 }
 
 
-secret_info_ttl = int(os.environ.get("SECRET_TTL", "0"))
+secret_info_ttl = int(os.environ.get("SECRET_TTL", "300"))
 
 client_manager = BWSClientManager(secret_info_ttl)
 
