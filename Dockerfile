@@ -1,7 +1,9 @@
 FROM node:20.11 as builder
 
 # renovate: datasource=github-releases depName=bitwarden/sdk
-ARG BWS_SDK_VERSION=0.4.0
+# TODO: pin to release tag when new release published on bitwarden/sdk; depends on aef6a21
+# ARG BWS_SDK_VERSION=0.4.0
+ARG BWS_SDK_BRANCH=main
 # renovate: datasource=github-releases depName=rust-lang/rust
 ARG RUST_VERSION=1.75.0
 
@@ -30,7 +32,7 @@ RUN dpkgArch="$(dpkg --print-architecture)" &&\
 # Clone BWS SDK
 RUN git clone https://github.com/bitwarden/sdk.git &&\
     cd sdk &&\
-    git checkout bws-v${BWS_SDK_VERSION}
+    [ -n "${BWS_SDK_VERSION}" ] && git checkout bws-v${BWS_SDK_VERSION} || git checkout ${BWS_SDK_BRANCH}
 
 WORKDIR /sdk
 
