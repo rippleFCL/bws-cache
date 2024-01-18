@@ -30,7 +30,7 @@ Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localho
 You can get your BWS organisation ID two ways:
 * From BWS CLI:
   * `bws project list` / `bws project get <project_id>` - Your organisation ID is shown in the `organizationId` value of each project returned.
-  * `bws secret list` / `bws secret get <secret_id` - Your organisation ID is shown in the `organizationId` value of each secret returned.
+  * `bws secret list` / `bws secret get <secret_id>` - Your organisation ID is shown in the `organizationId` value of each secret returned.
 * From browser:
   1. Go to https://vault.bitwarden.com
   2. Open Secrets Manager from the apps list in the top right
