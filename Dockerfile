@@ -57,6 +57,8 @@ RUN apt update &&\
 
 FROM python:3.12-slim-bookworm
 
+ENV PYTHONUNBUFFERED=1
+
 ENV ORG_ID=
 ENV SECRET_TTL=
 ENV DEBUG=false
