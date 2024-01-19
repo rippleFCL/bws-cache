@@ -1,5 +1,5 @@
-from bitwarden_sdk.bitwarden_client import BitwardenClient
-from bitwarden_sdk.schemas import client_settings_from_dict, DeviceType
+from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
+
 import time
 from threading import Lock
 import logging
