@@ -44,11 +44,14 @@ app.config["RESTFUL_JSON"] = {
 }
 
 
-secret_ttl_environ = os.environ.get("SECRET_TTL", "600")
-if secret_ttl_environ == "":
-    SECRET_INFO_TTL = 600
+secret_ttl_environ = os.environ.get("SECRET_TTL")
+if secret_ttl_environ:
+    try:
+        SECRET_INFO_TTL = int(secret_ttl_environ)
+    except ValueError:
+        raise ValueError("SECRET_TTL must be an integer")
 else:
-    SECRET_INFO_TTL = int(secret_ttl_environ)
+    SECRET_INFO_TTL = 600
 
 
 client_manager = BWSClientManager(SECRET_INFO_TTL)
