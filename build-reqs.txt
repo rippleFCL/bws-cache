@@ -1,2 +1,1 @@
-setuptools
-setuptools-rust==1.8.1
+maturin[patchelf]==1.4.0
