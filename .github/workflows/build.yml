@@ -26,7 +26,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: docker/setup-qemu-action@v3
+
+    # Disabled since the ARM64 builds take a ridiculous amount of time.
+    # - uses: docker/setup-qemu-action@v3
 
     - uses: docker/setup-buildx-action@v3
 
@@ -52,7 +54,8 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         annotations: ${{ steps.meta.outputs.annotations }}
-        platforms: linux/amd64,linux/arm64
+        # Disabled since the ARM64 builds take a ridiculous amount of time.
+        # platforms: linux/amd64,linux/arm64
         # Build cache is scoped to branches by default.
         # We use the main branch as a fallback if there's no cache for the existing branch.
         # https://stackoverflow.com/a/77127188/5209106
