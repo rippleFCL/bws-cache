@@ -44,9 +44,14 @@ app.config["RESTFUL_JSON"] = {
 }
 
 
-secret_info_ttl = int(os.environ.get("SECRET_TTL", "300"))
+secret_ttl_environ = os.environ.get("SECRET_TTL", "600")
+if secret_ttl_environ == "":
+    SECRET_INFO_TTL = 600
+else:
+    SECRET_INFO_TTL = int(secret_ttl_environ)
 
-client_manager = BWSClientManager(secret_info_ttl)
+
+client_manager = BWSClientManager(SECRET_INFO_TTL)
 
 
 def handle_api_errors(func):
