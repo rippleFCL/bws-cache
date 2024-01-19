@@ -20,7 +20,7 @@ RUN dpkgArch="$(dpkg --print-architecture)" &&\
         *) echo >&2 "unsupported architecture: ${dpkgArch}"; exit 1 ;; \
     esac &&\
     url="https://static.rust-lang.org/rustup/dist/${rustArch}/rustup-init" &&\
-    wget "$url" &&\
+    wget -q "$url" &&\
     chmod +x rustup-init &&\
     ./rustup-init -y --no-modify-path --profile minimal --default-host ${rustArch} &&\
     rm rustup-init &&\
@@ -56,6 +56,8 @@ RUN apt update &&\
     rm -rf /var/lib/apt/lists/*
 
 FROM python:3.12-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1
 
 ENV ORG_ID=
 ENV SECRET_TTL=
