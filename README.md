@@ -40,7 +40,7 @@ You can get your BWS organisation ID two ways:
 docker run \
   -p 5000:5000 \
   -e ORG_ID=<org ID> \
-  ghcr.io/rippleFCL/bws-cache:latest
+  ghcr.io/ripplefcl/bws-cache:latest
 ```
 
 ## Environment Variables
