@@ -15,9 +15,12 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 
 logger = logging.getLogger(__name__)
 
-debug = os.environ.get('DEBUG', False)
+debug_environ = os.environ.get('DEBUG', "")
+debug = debug_environ.lower() == "true"
+
 if debug:
     logger.setLevel(logging.DEBUG)
+
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
