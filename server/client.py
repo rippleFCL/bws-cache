@@ -38,6 +38,7 @@ class BWSClient:
         self.secret_key_map = dict()
         self.secret_key_map_refresh = 0
         self.secret_info_ttl = secret_info_ttl
+        self.errored = False
 
     def __enter__(self):
         self.bws_client_lock.acquire()
@@ -52,6 +53,7 @@ class BWSClient:
             logger.debug("authenticating client")
             self.bws_client.access_token_login(self.bws_token, f"/tmp/token_{hash(self.bws_token)}") #fixme: when rapid requests made with valid but expired token, this line hangs indefinitely
         except Exception as e:
+            self.errored = True
             if "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
                 raise InvalidTokenException("Invalid token") from e
             raise e
@@ -63,6 +65,7 @@ class BWSClient:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                self.errored = True
                 if "401 Unauthorized" in e.args[0]:
                     raise UnauthorizedTokenException("Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
@@ -81,6 +84,16 @@ class BWSClient:
     @_handle_api_errors
     def _get_secret_from_client(self, secret_uuid:str):
             return self.bws_client.secrets().get(secret_uuid).data
+
+    def reset_cache(self):
+        self.secret_cache = dict()
+        self.secret_cache_ttl = dict()
+        logger.debug("resetting secret cache")
+        self.secret_key_map = dict()
+        self.secret_key_map_refresh = 0
+        logger.debug("resetting secret key map")
+
+
 
     def get_secret_by_id(self, secret_id):
         cached_secret = self.secret_cache.get(secret_id, None)

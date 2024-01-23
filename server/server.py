@@ -78,6 +78,17 @@ def handle_api_errors(func):
     return wrapper
 
 
+class BwsReset(Resource):
+    @handle_api_errors
+    def get(self, auth_token):
+        with client_manager.get_client_by_token(auth_token) as client:
+            if not client.errored:
+                client.authenticate()
+                client.reset_cache()
+                return {"status": "success"}
+            return {"error": "errored token"}, 401
+
+
 class BwsCacheId(Resource):
     @handle_api_errors
     def get(self, auth_token, secret_id):
@@ -95,6 +106,7 @@ class BwsCacheKey(Resource):
             return client.get_secret_by_key(secret_id, org_id)
 
 
+api.add_resource(BwsReset, '/reset')
 api.add_resource(BwsCacheId, '/id/<string:secret_id>')
 api.add_resource(BwsCacheKey, '/key/<string:secret_id>')
 
