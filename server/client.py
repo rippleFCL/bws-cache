@@ -1,5 +1,5 @@
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
-
+from prom_client import PromMetricsClient
 import time
 from threading import Lock
 import logging
@@ -29,7 +29,8 @@ class BWSAPIRateLimitExceededException(Exception):
     pass
 
 class BWSClient:
-    def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock:Lock, secret_info_ttl):
+    def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock:Lock, secret_info_ttl: int, prom_client: PromMetricsClient):
+        self.prom_client = prom_client
         self.bws_token = bws_token
         self.bws_client_lock = client_lock
         self.bws_client = bws_client
@@ -95,25 +96,34 @@ class BWSClient:
 
 
 
-    def get_secret_by_id(self, secret_id):
+    def _get_secret(self, secret_id):
         cached_secret = self.secret_cache.get(secret_id, None)
         if cached_secret is None or time.time() - self.secret_cache_ttl[secret_id] > self.secret_info_ttl:
             logger.debug("cache miss for secret %s", secret_id)
+            self.prom_client.tick_cache_miss("secret")
             self.secret_cache[secret_id] = self._get_secret_from_client(secret_id)
             self.secret_cache_ttl[secret_id] = time.time()
         else:
             logger.debug("cache hit for secret %s", secret_id)
-
+            self.prom_client.tick_cache_hits("secret")
         return self.secret_cache[secret_id]
+
+    def get_secret_by_id(self, secret_id):
+        return self._get_secret(secret_id)
 
     def get_secret_by_key(self, secret_key, org_id):
         if not self.secret_key_map or time.time() - self.secret_key_map_refresh > self.secret_info_ttl:
+            self.prom_client.tick_cache_miss("key_map")
             logger.debug("regenerating secret key map")
             self._gen_secret_key_map(org_id)
-        return self.get_secret_by_id(self.secret_key_map[secret_key])
+        else:
+            self.prom_client.tick_cache_hits("key_map")
+
+        return self._get_secret(self.secret_key_map[secret_key])
 
 class BWSClientManager:
-    def __init__(self, secret_info_ttl=0):
+    def __init__(self, secret_info_ttl:int, prom_client: PromMetricsClient):
+        self.prom_client = prom_client
         self.secret_info_ttl = secret_info_ttl
         self.bws_client = self.make_client()
         self.clients = dict()
@@ -131,6 +141,6 @@ class BWSClientManager:
     def get_client_by_token(self, bws_secret_token) -> BWSClient:
         client = self.clients.get(bws_secret_token, None)
         if client is None:
-            client = BWSClient(self.bws_client, bws_secret_token, self.client_lock, self.secret_info_ttl)
+            client = BWSClient(self.bws_client, bws_secret_token, self.client_lock, self.secret_info_ttl, self.prom_client)
             self.clients[bws_secret_token] = client
         return client
