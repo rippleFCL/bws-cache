@@ -85,7 +85,7 @@ class BwsReset(Resource):
             if not client.errored:
                 client.authenticate()
                 client.reset_cache()
-                return {"status": "succ"}
+                return {"status": "success"}
             return {"error": "errored token"}, 401
 
 
