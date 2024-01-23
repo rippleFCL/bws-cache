@@ -41,10 +41,10 @@ WORKDIR /sdk
 RUN npm ci &&\
     npm run schemas
 
-COPY build-reqs.txt .
+COPY build-requirements.txt .
 
 # Compile Python bindings
-RUN pip install --no-cache -r build-reqs.txt &&\
+RUN pip install --no-cache -r build-requirements.txt &&\
     cd languages/python &&\
     maturin build --compatibility linux
 
@@ -58,10 +58,10 @@ ENV DEBUG=false
 
 WORKDIR /app
 
-COPY server/reqs.txt .
+COPY server/requirements.txt .
 COPY --from=builder /sdk/target/wheels/bitwarden_sdk*.whl .
 
-RUN find . -name "bitwarden_sdk*.whl" -exec pip install --no-cache-dir -r reqs.txt {} \; &&\
+RUN find . -name "bitwarden_sdk*.whl" -exec pip install --no-cache-dir -r requirements.txt {} \; &&\
     rm -v bitwarden_sdk*.whl
 
 COPY server/ .
