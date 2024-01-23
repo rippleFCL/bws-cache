@@ -26,7 +26,7 @@ Query secret by ID: `curl -H "Authorization: Bearer <BWS token>" http://localhos
 
 Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/key/my_secret`
 
-invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
+Invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
 
 # Run
 
