@@ -12,6 +12,7 @@ This allows lookup by either name or key, as shown below.
 
 * `/id/<string:secret_id>`
 * `/key/<string:secret_key>`
+* `/reset`
 
 ## Authorisation
 
@@ -24,6 +25,8 @@ A valid BWS access token should be passed as a bearer token in the `Authorizatio
 Query secret by ID: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/id/<secret_id>`
 
 Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/key/my_secret`
+
+invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
 
 # Run
 
