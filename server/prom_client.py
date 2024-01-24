@@ -17,7 +17,7 @@ class PromMetricsClient:
         self.cache_miss.labels(type=type).inc()
 
     def tick_http_request_total(self, endpoint:str, status_code:str):
-        self.http_request_total.labels(endpoint=endpoint, status_code=status_code)
+        self.http_request_total.labels(endpoint=endpoint, status_code=status_code).inc()
 
     def tick_http_request_duration(self, endpoint:str, duration):
         self.http_request_duration.labels(endpoint=endpoint).observe(duration)
