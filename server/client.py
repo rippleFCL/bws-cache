@@ -49,7 +49,7 @@ class BWSClient:
         self.bws_client_lock.release()
 
 
-    def authenticate(self, cache:bool=True):
+    def authenticate(self, cache: bool=True):
         try:
             logger.debug("authenticating client")
             auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
@@ -92,7 +92,7 @@ class BWSClient:
         self.secret_key_map_refresh = time.time()
 
     @_handle_api_errors
-    def _get_secret_from_client(self, secret_uuid:str):
+    def _get_secret_from_client(self, secret_uuid: str):
             return self.bws_client.secrets().get(secret_uuid).data
 
     def reset_cache(self):
