@@ -53,3 +53,11 @@ docker run \
 | `ORG_ID`                | Your BWS organisation ID.                                                                       |
 | `SECRET_TTL`            | TTL of cached secrets and secret ID-to-key mappings. Defaults to `600`.                         |
 | `DEBUG`                 | Enable debug logging. Defaults to `false`.                                                      |
+
+# Internal notes
+
+For reference on how internally this cache works. on a key based secret lookup
+the app does a org wide list of all secrets and stores a cache of the keys and their
+relating ids. this 'key_map_cache' also abides by the secret ttl and refreshes this
+entire cache when it expires.
+
