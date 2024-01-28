@@ -10,10 +10,10 @@ class PromMetricsClient:
         self.http_request_total = Counter("http_request_total", "http request total", ["endpoint", "status_code"])
         self.http_request_duration = Gauge("http_request_duration", "http request duration", ["endpoint"])
 
-    def tick_cache_hits(self, type:str):
+    def tick_cache_hits(self, type: str):
         self.cache_hit.labels(type=type).inc()
 
-    def tick_cache_miss(self, type:str):
+    def tick_cache_miss(self, type: str):
         self.cache_miss.labels(type=type).inc()
 
     def tick_http_request_total(self, endpoint:str, status_code:str):

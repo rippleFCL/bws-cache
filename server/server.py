@@ -97,7 +97,7 @@ class BwsReset(Resource):
     def get(self, auth_token):
         with client_manager.get_client_by_token(auth_token) as client:
             if not client.errored:
-                client.authenticate()
+                client.authenticate(cache=False)
                 client.reset_cache()
                 return {"status": "success"}, 200
             return {"error": "errored token"}, 401
