@@ -1,5 +1,5 @@
 from bitwarden_sdk.schemas import SecretResponse
-from client import BWSClientManager, InvalidTokenException, UnauthorizedTokenException, BWSAPIRateLimitExceededException
+from client import BWSClientManager, InvalidTokenException, UnauthorizedTokenException, BWSAPIRateLimitExceededException, UnsetOrgIdException
 from prom_client import PromMetricsClient
 from datetime import datetime
 from flask import Flask, request
@@ -74,7 +74,8 @@ def handle_api_errors(func):
                 return {"error": "unauthorized token"}, 401
             except BWSAPIRateLimitExceededException:
                 return {"error": "rate limited"}, 429
-
+            except UnsetOrgIdException:
+                return {"error": "unset org id"}, 400
         return {"error": "invalid auth header"}, 400
     return wrapper
 

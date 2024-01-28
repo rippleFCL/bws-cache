@@ -21,6 +21,8 @@ logger.addHandler(ch)
 class InvalidTokenException(Exception):
     pass
 
+class UnsetOrgIdException(Exception):
+    pass
 
 class UnauthorizedTokenException(Exception):
     pass
@@ -84,6 +86,8 @@ class BWSClient:
 
     @_handle_api_errors
     def _gen_secret_key_map(self, org_id):
+        if not org_id:
+            raise UnsetOrgIdException("Org id is unset")
         key_mapping = dict()
         for secret in self.bws_client.secrets().list(org_id).data.data:
             key_mapping[secret.key] = secret.id
