@@ -65,13 +65,12 @@ class BWSClient:
 
             self.errored = True
             raise e
-
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             try:
-                return func(*args, **kwargs)
+                return func(self, *args, **kwargs)
             except Exception as e:
                 logger.error("request failed with %s", e.args[0])
 
