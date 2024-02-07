@@ -8,10 +8,6 @@ ENV DEBUG=false
 
 WORKDIR /app
 
-COPY build-requirements.txt .
-
-RUN pip install --no-cache -r build-requirements.txt
-
 COPY server/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt

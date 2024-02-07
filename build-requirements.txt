@@ -1,1 +1,0 @@
-maturin[patchelf]==1.4.0
