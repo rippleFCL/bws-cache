@@ -48,8 +48,8 @@ docker run \
 
 ## Environment Variables
 
-| Name                    | Info                                                                                            |
-|-------------------------|-------------------------------------------------------------------------------------------------|
-| `ORG_ID`                | Your BWS organisation ID.                                                                       |
-| `SECRET_TTL`            | TTL of cached secrets and secret ID-to-key mappings. Defaults to `600`.                         |
-| `DEBUG`                 | Enable debug logging. Defaults to `false`.                                                      |
+| Name         | Info                                                 | Default |
+|--------------|------------------------------------------------------|---------|
+| `ORG_ID`     | Your BWS organisation ID.                            |         |
+| `SECRET_TTL` | TTL of cached secrets and secret ID-to-key mappings. | `600`   |
+| `DEBUG`      | Enable debug logging. Defaults to `false`.           | `false` |
