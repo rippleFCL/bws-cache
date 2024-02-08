@@ -8,7 +8,7 @@ ENV DEBUG=false
 
 WORKDIR /app
 
-COPY server/requirements.txt .
+COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
