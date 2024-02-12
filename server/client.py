@@ -106,7 +106,6 @@ class BWSClient:
         except json.JSONDecodeError:
             logging.info("json parse failed")
         try:
-            print(data.value)
             data.value = yaml.safe_load(data.value)
             return data
         except yaml.YAMLError:
