@@ -69,6 +69,7 @@ class BWSClient:
 
             self.errored = True
             raise e
+
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
@@ -92,7 +93,6 @@ class BWSClient:
             raise UnsetOrgIdException("Org id is unset")
         key_mapping = dict()
         for secret in self.bws_client.secrets().list(org_id).data.data:
-            print(secret)
             key_mapping[secret.key] = secret.id
         self.secret_key_map = key_mapping
         self.secret_key_map_refresh = time.time()
