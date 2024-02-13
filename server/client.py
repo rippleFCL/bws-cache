@@ -5,6 +5,8 @@ from threading import Lock
 import logging
 import functools
 import os
+import json
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ class BWSClient:
 
             self.errored = True
             raise e
+
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
@@ -96,7 +99,20 @@ class BWSClient:
 
     @_handle_api_errors
     def _get_secret_from_client(self, secret_uuid: str):
-            return self.bws_client.secrets().get(secret_uuid).data
+        data = self.bws_client.secrets().get(secret_uuid).data
+        try:
+            data.value = json.loads(data.value)
+            return data
+        except json.JSONDecodeError:
+            logging.info("json parse failed")
+        try:
+            data.value = yaml.safe_load(data.value)
+            return data
+        except yaml.YAMLError:
+            logging.info("yaml parse failed")
+
+        return data
+
 
     def reset_cache(self):
         self.secret_cache = dict()
