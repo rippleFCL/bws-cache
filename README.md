@@ -39,11 +39,26 @@ You can get your BWS organisation ID two ways:
   2. Open Secrets Manager from the apps list in the top right
   3. Your organisation ID is in the URL like this: `https://vault.bitwarden.com/#/sm/<BWS org ID>`
 
+Docker Run:
+
 ```
 docker run \
   -p 5000:5000 \
   -e ORG_ID=<org ID> \
   ghcr.io/ripplefcl/bws-cache:latest
+```
+
+Docker Compose:
+
+```yml
+version: '3'
+services:
+  bwscache:
+    image: ghcr.io/ripplefcl/bws-cache:latest
+    environment:
+      ORG_ID: <org ID>
+    ports:
+      - '5000:5000'
 ```
 
 ## Environment Variables
