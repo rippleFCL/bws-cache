@@ -1,12 +1,14 @@
-from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
-from prom_client import PromMetricsClient
+import functools
+import json
+import logging
+import os
 import time
 from threading import Lock
-import logging
-import functools
-import os
-import json
+
 import yaml
+from bitwarden_sdk import (BitwardenClient, DeviceType,
+                           client_settings_from_dict)
+from prom_client import PromMetricsClient
 
 logger = logging.getLogger(__name__)
 
