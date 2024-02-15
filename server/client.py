@@ -12,7 +12,7 @@ from prom_client import PromMetricsClient
 
 logger = logging.getLogger(__name__)
 
-debug = True if os.environ.get('DEBUG', False) == "true" else False
+debug = os.environ.get('DEBUG', False) == "true"
 
 if debug:
     logger.setLevel(logging.DEBUG)
