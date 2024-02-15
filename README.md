@@ -69,9 +69,41 @@ services:
 | `SECRET_TTL` | TTL of cached secrets and secret ID-to-key mappings. | `600`   |
 | `DEBUG`      | Enable debug logging. Defaults to `false`.           | `false` |
 
-# Internal notes
+# How It Works
 
-For reference on how internally this cache works. on a key based secret lookup
-the app does a org wide list of all secrets and stores a cache of the keys and their
-relating ids. this 'key_map_cache' also abides by the secret ttl and refreshes this
-entire cache when it expires.
+When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied. You can use the `/reset` endpoint if you wish to manually empty the cache.
+
+Since bws-cache allows for secret lookups by key (as opposed to ID), a feature that is not yet natively available in first-party BWS clients, it also caches a map of secret ID/key pairs. We'll call this the keymap cache. The keymap cache expires just as the secret cache does, respecting `SECRET_TTL`.
+
+Upon lookup of a secret ID that **does not** exist in cache, bws-cache will query the BWS API for the secret, store it in the cache, and return the secret object to the client.
+
+Upon lookup of a secret ID that **does** exist in cache, bws-cache will check the timestamp of the secret's cache entry to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.  
+If the secret in cache has expired, bws-cache will query the BWS API for the secret, re-cache it, and return the secret object to the client.
+
+Upon lookup of a secret key that **does not** exist in the key map cache cache, bws-cache queries the BWS API for a list of every secret in the specified `ORG_ID`. It then generates and stores the keymap cache and returns the secret to the client.
+
+Upon lookup of a secret key that **does** exist in cache, bws-cache will check the timestamp of the keymap cache to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.
+If the keymap cache has expired, it will first be refresh as described above, after which the secret object will be returned to the client.
+
+```mermaid
+---
+title: bws-cache request flow
+---
+flowchart TD
+    Client(Client) --- BwsCache(bws-cache)
+    BwsCache -->|ID lookup| IsSecretCached{Secret cached?}
+    IsSecretCached -->|Yes| IsSecretExpired{Cached secret older than TTL?}
+    IsSecretExpired -->|No| ReturnSecret[Return secret to client]
+    IsSecretCached -->|No| QuerySecret[Request secret from BWS API]
+    IsSecretExpired -->|Yes| QuerySecret
+    QuerySecret --> CacheSecret[Cache secret]
+    CacheSecret --> ReturnSecret
+    ReturnSecret --> Client
+    BwsCache -->|key lookup| IsKeyCacheExist{Keymap cache exists?}
+    IsKeyCacheExist -->|Yes| IsKeyCacheExpired{Keymap cache older than TTL?}
+    IsKeyCacheExpired -->|No| IsSecretCached
+    IsKeyCacheExist -->|No| QuerySecretList[Request list of all secrets from BWS API]
+    QuerySecretList -->GenKeyCache[Generate keymap cache]
+    GenKeyCache --> IsSecretCached
+    IsKeyCacheExpired -->|Yes| QuerySecretList
+```
