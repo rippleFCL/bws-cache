@@ -1,12 +1,12 @@
 # Bitwarden Secrets Manager Cache
 
-Python app implementing a read-through cache for BWS secrets.
+Python app implementing a read-through cache for Bitwarden Secrets Manager (BWS) secrets.
 
 # Usage
 
 When a secret is queried, not only is the secret cached in memory, but a mapping between ID and key is also cached.
 
-This allows lookup by either name or key, as shown below.
+This allows lookup by either ID or key, as shown below.
 
 ## Endpoints
 
@@ -14,9 +14,9 @@ This allows lookup by either name or key, as shown below.
 * `/key/<string:secret_key>`
 * `/reset`
 
-## Authorisation
+## Authentication
 
-bws-cache delegates authorisation to the BWS client library, rather than requiring a defined token for client authorisation.
+bws-cache delegates authentication to the BWS client library, rather than requiring a defined token for client authentication.
 
 A valid BWS access token should be passed as a bearer token in the `Authorization` header, as shown in the examples below.
 
