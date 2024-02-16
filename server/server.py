@@ -1,16 +1,19 @@
-from bitwarden_sdk.schemas import SecretResponse
-from client import BWSClientManager, InvalidTokenException, UnauthorizedTokenException, BWSAPIRateLimitExceededException, UnsetOrgIdException
-from prom_client import PromMetricsClient
-from datetime import datetime
-from flask import Flask, request
-from flask_restful import Api, Resource
-from flask.json.provider import _default as _json_default
-from json import JSONEncoder, dumps
-from typing import Any
 import functools
-import os
 import logging
+import os
 import time
+from datetime import datetime
+from json import JSONEncoder
+from typing import Any
+
+from bitwarden_sdk.schemas import SecretResponse
+from client import (BWSAPIRateLimitExceededException, BWSClientManager,
+                    InvalidTokenException, UnauthorizedTokenException,
+                    UnsetOrgIdException)
+from flask import Flask, request
+from flask.json.provider import _default as _json_default
+from flask_restful import Api, Resource
+from prom_client import PromMetricsClient
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 

@@ -1,16 +1,18 @@
-from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
-from prom_client import PromMetricsClient
+import functools
+import json
+import logging
+import os
 import time
 from threading import Lock
-import logging
-import functools
-import os
-import json
+
 import yaml
+from bitwarden_sdk import (BitwardenClient, DeviceType,
+                           client_settings_from_dict)
+from prom_client import PromMetricsClient
 
 logger = logging.getLogger(__name__)
 
-debug = True if os.environ.get('DEBUG', False) == "true" else False
+debug = os.environ.get('DEBUG', False) == "true"
 
 if debug:
     logger.setLevel(logging.DEBUG)
@@ -38,9 +40,9 @@ class BWSClient:
         self.bws_token = bws_token
         self.bws_client_lock = client_lock
         self.bws_client = bws_client
-        self.secret_cache = dict()
-        self.secret_cache_ttl = dict()
-        self.secret_key_map = dict()
+        self.secret_cache = {}
+        self.secret_cache_ttl = {}
+        self.secret_key_map = {}
         self.secret_key_map_refresh = 0
         self.secret_info_ttl = secret_info_ttl
         self.errored = False
@@ -57,7 +59,8 @@ class BWSClient:
         try:
             logger.debug("authenticating client")
             auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
-            self.bws_client.access_token_login(self.bws_token, auth_cache_file) #fixme: when rapid requests made with valid but expired token, this line hangs indefinitely
+            # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
+            self.bws_client.access_token_login(self.bws_token, auth_cache_file)
         except Exception as e:
             logger.error("request failed with %s", e.args[0])
             if "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
@@ -91,7 +94,7 @@ class BWSClient:
     def _gen_secret_key_map(self, org_id):
         if not org_id:
             raise UnsetOrgIdException("Org id is unset")
-        key_mapping = dict()
+        key_mapping = {}
         for secret in self.bws_client.secrets().list(org_id).data.data:
             key_mapping[secret.key] = secret.id
         self.secret_key_map = key_mapping
@@ -115,10 +118,10 @@ class BWSClient:
 
 
     def reset_cache(self):
-        self.secret_cache = dict()
-        self.secret_cache_ttl = dict()
+        self.secret_cache = {}
+        self.secret_cache_ttl = {}
         logger.debug("resetting secret cache")
-        self.secret_key_map = dict()
+        self.secret_key_map = {}
         self.secret_key_map_refresh = 0
         logger.debug("resetting secret key map")
 
@@ -154,7 +157,7 @@ class BWSClientManager:
         self.prom_client = prom_client
         self.secret_info_ttl = secret_info_ttl
         self.bws_client = self.make_client()
-        self.clients = dict()
+        self.clients = {}
         self.client_lock = Lock()
 
 
