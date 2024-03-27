@@ -9,7 +9,7 @@ from typing import Any
 from bitwarden_sdk.schemas import SecretResponse
 from client import (BWSAPIRateLimitExceededException, BWSClientManager,
                     InvalidTokenException, UnauthorizedTokenException,
-                    UnsetOrgIdException)
+                    UnsetOrgIdException, BWCSecretNotFound, BWCKeyNotFound)
 from flask import Flask, request
 from flask.json.provider import _default as _json_default
 from flask_restful import Api, Resource
@@ -74,11 +74,15 @@ def handle_api_errors(func):
             except InvalidTokenException:
                 return {"error": "invalid token"}, 400
             except UnauthorizedTokenException:
-                return {"error": "unauthorized token"}, 401
+                return {"error": "Unauthorized token"}, 401
             except BWSAPIRateLimitExceededException:
-                return {"error": "rate limited"}, 429
+                return {"error": "Rate limited"}, 429
             except UnsetOrgIdException:
-                return {"error": "unset org id"}, 400
+                return {"error": "Unset org id"}, 400
+            except BWCSecretNotFound:
+                return {"error": "Secret not found"}, 404
+            except BWCKeyNotFound:
+                return {"error": "Key not found"}, 404
         return {"error": "invalid auth header"}, 400
     return wrapper
 
