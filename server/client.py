@@ -34,6 +34,13 @@ class UnauthorizedTokenException(Exception):
 class BWSAPIRateLimitExceededException(Exception):
     pass
 
+class BWCSecretNotFound(Exception):
+    pass
+
+class BWCKeyNotFound(Exception):
+    pass
+
+
 class BWSClient:
     def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock:Lock, secret_info_ttl: int, prom_client: PromMetricsClient):
         self.prom_client = prom_client
@@ -87,6 +94,8 @@ class BWSClient:
                     raise UnauthorizedTokenException("Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
                     raise BWSAPIRateLimitExceededException("too many requests") from e
+                elif "404 Not Found" in e.args[0]:
+                    raise BWCSecretNotFound() from e
                 raise e
         return wrapper
 
@@ -150,7 +159,10 @@ class BWSClient:
         else:
             self.prom_client.tick_cache_hits("key_map")
 
-        return self._get_secret(self.secret_key_map[secret_key])
+        try:
+            return self._get_secret(self.secret_key_map[secret_key])
+        except KeyError as key_error:
+            raise BWCKeyNotFound() from key_error
 
 class BWSClientManager:
     def __init__(self, secret_info_ttl:int, prom_client: PromMetricsClient):
