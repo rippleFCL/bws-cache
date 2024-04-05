@@ -76,7 +76,7 @@ def handle_api_errors(func):
             try:
                 return func(self, auth_header.split()[-1], *args, **kwargs)
             except InvalidTokenException:
-                return {"error": "invalid token"}, 400
+                return {"error": "Invalid token"}, 400
             except UnauthorizedTokenException:
                 return {"error": "Unauthorized token"}, 401
             except BWSAPIRateLimitExceededException:
