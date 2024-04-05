@@ -63,11 +63,12 @@ services:
 
 ## Environment Variables
 
-| Name         | Info                                                 | Default |
-|--------------|------------------------------------------------------|---------|
-| `ORG_ID`     | Your BWS organisation ID.                            |         |
-| `SECRET_TTL` | TTL of cached secrets and secret ID-to-key mappings. | `600`   |
-| `DEBUG`      | Enable debug logging. Defaults to `false`.           | `false` |
+| Name                     | Info                                                            | Default |
+|--------------------------|-----------------------------------------------------------------|---------|
+| `ORG_ID`                 | Your BWS organisation ID.                                       |         |
+| `SECRET_TTL`             | TTL of cached secrets and secret ID-to-key mappings.            | `600`   |
+| `DEBUG`                  | Enable debug logging. Defaults to `false`.                      | `false` |
+| `REFRESH_KEYMAP_ON_MISS` | Enable refreshing of the keymap on key miss. Defaults to `true` | `false` |
 
 # How It Works
 
@@ -77,10 +78,10 @@ Since bws-cache allows for secret lookups by key (as opposed to ID), a feature t
 
 Upon lookup of a secret ID that **does not** exist in cache, bws-cache will query the BWS API for the secret, store it in the cache, and return the secret object to the client.
 
-Upon lookup of a secret ID that **does** exist in cache, bws-cache will check the timestamp of the secret's cache entry to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.  
+Upon lookup of a secret ID that **does** exist in cache, bws-cache will check the timestamp of the secret's cache entry to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.
 If the secret in cache has expired, bws-cache will query the BWS API for the secret, re-cache it, and return the secret object to the client.
 
-Upon lookup of a secret key that **does not** exist in the key map cache cache, bws-cache queries the BWS API for a list of every secret in the specified `ORG_ID`. It then generates and stores the keymap cache and returns the secret to the client.
+Upon lookup of a secret key that **does not** exist in the key map cache and if `REFRESH_KEYMAP_ON_MISS` is true, bws-cache queries the BWS API for a list of every secret in the specified `ORG_ID`. It then generates and stores the keymap cache and returns the secret to the client if it exists or returns missing secret.
 
 Upon lookup of a secret key that **does** exist in cache, bws-cache will check the timestamp of the keymap cache to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.
 If the keymap cache has expired, it will first be refresh as described above, after which the secret object will be returned to the client.
