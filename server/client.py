@@ -18,24 +18,38 @@ if debug:
     logger.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+
 
 class InvalidTokenException(Exception):
     pass
 
+
 class UnsetOrgIdException(Exception):
     pass
+
 
 class UnauthorizedTokenException(Exception):
     pass
 
+
 class BWSAPIRateLimitExceededException(Exception):
     pass
 
+
+class BWSSecretNotFound(Exception):
+    pass
+
+
+class BWSKeyNotFound(Exception):
+    pass
+
+
 class BWSClient:
-    def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock:Lock, secret_info_ttl: int, prom_client: PromMetricsClient):
+    def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock: Lock, secret_info_ttl: int, prom_client: PromMetricsClient):
         self.prom_client = prom_client
         self.bws_token = bws_token
         self.bws_client_lock = client_lock
@@ -54,8 +68,7 @@ class BWSClient:
     def __exit__(self, exc_type, exc_value, trace):
         self.bws_client_lock.release()
 
-
-    def authenticate(self, cache: bool=True):
+    def authenticate(self, cache: bool = True):
         try:
             logger.debug("authenticating client")
             auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
@@ -68,7 +81,8 @@ class BWSClient:
                 raise InvalidTokenException("Invalid token") from e
 
             if "429 Too Many Requests" in e.args[0]:
-                raise BWSAPIRateLimitExceededException("Auth rate limit") from e
+                raise BWSAPIRateLimitExceededException(
+                    "Auth rate limit") from e
 
             self.errored = True
             raise e
@@ -84,9 +98,13 @@ class BWSClient:
 
                 self.errored = True
                 if "401 Unauthorized" in e.args[0]:
-                    raise UnauthorizedTokenException("Unauthorized token") from e
+                    raise UnauthorizedTokenException(
+                        "Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
-                    raise BWSAPIRateLimitExceededException("too many requests") from e
+                    raise BWSAPIRateLimitExceededException(
+                        "too many requests") from e
+                elif "404 Not Found" in e.args[0]:
+                    raise BWSSecretNotFound() from e
                 raise e
         return wrapper
 
@@ -116,7 +134,6 @@ class BWSClient:
 
         return data
 
-
     def reset_cache(self):
         self.secret_cache = {}
         self.secret_cache_ttl = {}
@@ -125,14 +142,13 @@ class BWSClient:
         self.secret_key_map_refresh = 0
         logger.debug("resetting secret key map")
 
-
-
     def _get_secret(self, secret_id):
         cached_secret = self.secret_cache.get(secret_id, None)
         if cached_secret is None or time.time() - self.secret_cache_ttl[secret_id] > self.secret_info_ttl:
             logger.debug("cache miss for secret %s", secret_id)
             self.prom_client.tick_cache_miss("secret")
-            self.secret_cache[secret_id] = self._get_secret_from_client(secret_id)
+            self.secret_cache[secret_id] = self._get_secret_from_client(
+                secret_id)
             self.secret_cache_ttl[secret_id] = time.time()
         else:
             logger.debug("cache hit for secret %s", secret_id)
@@ -150,16 +166,19 @@ class BWSClient:
         else:
             self.prom_client.tick_cache_hits("key_map")
 
-        return self._get_secret(self.secret_key_map[secret_key])
+        try:
+            return self._get_secret(self.secret_key_map[secret_key])
+        except KeyError as key_error:
+            raise BWSKeyNotFound() from key_error
+
 
 class BWSClientManager:
-    def __init__(self, secret_info_ttl:int, prom_client: PromMetricsClient):
+    def __init__(self, secret_info_ttl: int, prom_client: PromMetricsClient):
         self.prom_client = prom_client
         self.secret_info_ttl = secret_info_ttl
         self.bws_client = self.make_client()
         self.clients = {}
         self.client_lock = Lock()
-
 
     def make_client(self):
         return BitwardenClient(client_settings_from_dict({
@@ -172,6 +191,7 @@ class BWSClientManager:
     def get_client_by_token(self, bws_secret_token) -> BWSClient:
         client = self.clients.get(bws_secret_token, None)
         if client is None:
-            client = BWSClient(self.bws_client, bws_secret_token, self.client_lock, self.secret_info_ttl, self.prom_client)
+            client = BWSClient(self.bws_client, bws_secret_token,
+                               self.client_lock, self.secret_info_ttl, self.prom_client)
             self.clients[bws_secret_token] = client
         return client
