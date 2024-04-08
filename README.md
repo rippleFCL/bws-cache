@@ -68,7 +68,7 @@ services:
 | `ORG_ID`                 | Your BWS organisation ID.                                       |         |
 | `SECRET_TTL`             | TTL of cached secrets and secret ID-to-key mappings.            | `600`   |
 | `DEBUG`                  | Enable debug logging. Defaults to `false`.                      | `false` |
-| `REFRESH_KEYMAP_ON_MISS` | Enable refreshing of the keymap on key miss. Defaults to `true` | `false` |
+| `REFRESH_KEYMAP_ON_MISS` | Enable refreshing of the keymap on key miss. Defaults to `true` | `true`  |
 
 # How It Works
 
