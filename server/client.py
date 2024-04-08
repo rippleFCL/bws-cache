@@ -158,11 +158,17 @@ class BWSClient:
     def get_secret_by_id(self, secret_id):
         return self._get_secret(secret_id)
 
-    def get_secret_by_key(self, secret_key, org_id):
+    def get_secret_by_key(self, secret_key, org_id, refresh_keymap_on_miss: bool = False):
         if not self.secret_key_map or time.time() - self.secret_key_map_refresh > self.secret_info_ttl:
-            self.prom_client.tick_cache_miss("key_map")
             logger.debug("regenerating secret key map")
             self._gen_secret_key_map(org_id)
+            self.prom_client.tick_cache_miss("key_map")
+
+        elif not secret_key in self.secret_key_map and refresh_keymap_on_miss:
+            logger.debug("regenerating secret key map")
+            self._gen_secret_key_map(org_id)
+            self.prom_client.tick_cache_miss("key_map")
+
         else:
             self.prom_client.tick_cache_hits("key_map")
 

@@ -55,6 +55,9 @@ app.config["RESTFUL_JSON"] = {
 }
 
 
+refresh_keymap_on_miss = os.environ.get("REFRESH_KEYMAP_ON_MISS", "").lower() == "true"
+
+
 secret_ttl_environ = os.environ.get("SECRET_TTL")
 if secret_ttl_environ:
     try:
@@ -133,7 +136,7 @@ class BwsCacheKey(Resource):
             "ORG_ID", request.headers.get("OrganizationId", ""))
         with client_manager.get_client_by_token(auth_token) as client:
             client.authenticate()
-            return client.get_secret_by_key(secret_id, org_id), 200
+            return client.get_secret_by_key(secret_id, org_id, refresh_keymap_on_miss), 200
 
 
 api.add_resource(BwsReset, '/reset')
