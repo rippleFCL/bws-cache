@@ -48,7 +48,7 @@ jobs:
           type=ref,event=pr
 
     - name: Build and push image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         push: ${{ inputs.push != 'false' }} # is null if trigger != workflow_dispatch
         tags: ${{ steps.meta.outputs.tags }}
