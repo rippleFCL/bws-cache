@@ -51,7 +51,6 @@ docker run \
 Docker Compose:
 
 ```yml
-version: '3'
 services:
   bwscache:
     image: ghcr.io/ripplefcl/bws-cache:latest
