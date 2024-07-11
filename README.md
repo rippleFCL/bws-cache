@@ -71,7 +71,9 @@ services:
 
 # How It Works
 
-When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied. You can use the `/reset` endpoint if you wish to manually empty the cache.
+When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied. 
+
+You can use the `/reset` endpoint if you wish to manually empty the cache.
 
 Since bws-cache allows for secret lookups by key (as opposed to ID), a feature that is not yet natively available in first-party BWS clients, it also caches a map of secret ID/key pairs. We'll call this the keymap cache. The keymap cache expires just as the secret cache does, respecting `SECRET_TTL`.
 
