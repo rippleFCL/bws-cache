@@ -112,11 +112,9 @@ class BwsReset(Resource):
     @handle_api_errors
     def get(self, auth_token):
         with client_manager.get_client_by_token(auth_token) as client:
-            if not client.errored:
-                client.authenticate(cache=False)
-                client.reset_cache()
-                return {"status": "success"}, 200
-            return {"error": "errored token"}, 401
+            client.authenticate(cache=False)
+            client.reset_cache()
+            return {"status": "success"}, 200
 
 
 class BwsCacheId(Resource):
@@ -154,4 +152,4 @@ def prometheus_metrics():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5050)
