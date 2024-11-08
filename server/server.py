@@ -111,30 +111,26 @@ class BwsReset(Resource):
     @prom_stats("/reset")
     @handle_api_errors
     def get(self, auth_token):
-        with client_manager.get_client_by_token(auth_token) as client:
-            client.authenticate(cache=False)
-            client.reset_cache()
-            return {"status": "success"}, 200
+        client =  client_manager.get_client_by_token(auth_token)
+        client.reset_cache()
+        return {"status": "success"}, 200
 
 
 class BwsCacheId(Resource):
     @prom_stats("/id")
     @handle_api_errors
     def get(self, auth_token, secret_id):
-        with client_manager.get_client_by_token(auth_token) as client:
-            client.authenticate()
-            return client.get_secret_by_id(secret_id), 200
+        client =  client_manager.get_client_by_token(auth_token)
+        return client.get_secret_by_id(secret_id), 200
 
 
 class BwsCacheKey(Resource):
     @prom_stats("/key")
     @handle_api_errors
     def get(self, auth_token, secret_id, ):
-        org_id = os.environ.get(
-            "ORG_ID", request.headers.get("OrganizationId", ""))
-        with client_manager.get_client_by_token(auth_token) as client:
-            client.authenticate()
-            return client.get_secret_by_key(secret_id, org_id, refresh_keymap_on_miss), 200
+        org_id=os.environ.get("ORG_ID", request.headers.get("OrganizationId", ""))
+        client =  client_manager.get_client_by_token(auth_token)
+        return client.get_secret_by_key(secret_id, org_id, refresh_keymap_on_miss), 200
 
 
 api.add_resource(BwsReset, '/reset')
