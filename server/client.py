@@ -49,10 +49,9 @@ class BWSKeyNotFound(Exception):
 
 
 class BWSClient:
-    def __init__(self, bws_client: BitwardenClient, bws_token: str, client_lock: Lock, secret_info_ttl: int, prom_client: PromMetricsClient):
+    def __init__(self, bws_client: BitwardenClient, bws_token: str, secret_info_ttl: int, prom_client: PromMetricsClient):
         self.prom_client = prom_client
         self.bws_token = bws_token
-        self.bws_client_lock = client_lock
         self.bws_client = bws_client
         self.secret_cache = {}
         self.secret_cache_ttl = {}
@@ -60,18 +59,13 @@ class BWSClient:
         self.secret_key_map_refresh = 0
         self.secret_info_ttl = secret_info_ttl
 
-    def __enter__(self):
-        self.bws_client_lock.acquire()
-        return self
 
-    def __exit__(self, exc_type, exc_value, trace):
-        self.bws_client_lock.release()
-
-    def authenticate(self, cache: bool = True):
+    def authenticate(self, cache: bool=True):
         try:
             logger.debug("authenticating client")
             auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
             # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
+            # not fixed but restructured to call this less
             self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
         except Exception as e:
             logger.error("request failed with %s", e.args[0])
@@ -180,9 +174,7 @@ class BWSClientManager:
     def __init__(self, secret_info_ttl: int, prom_client: PromMetricsClient):
         self.prom_client = prom_client
         self.secret_info_ttl = secret_info_ttl
-        self.bws_client = self.make_client()
         self.clients = {}
-        self.client_lock = Lock()
 
     def make_client(self):
         return BitwardenClient(client_settings_from_dict({
@@ -195,7 +187,7 @@ class BWSClientManager:
     def get_client_by_token(self, bws_secret_token) -> BWSClient:
         client = self.clients.get(bws_secret_token, None)
         if client is None:
-            client = BWSClient(self.bws_client, bws_secret_token,
-                               self.client_lock, self.secret_info_ttl, self.prom_client)
+            client = BWSClient(self.make_client(), bws_secret_token, self.secret_info_ttl, self.prom_client)
+            client.authenticate()
             self.clients[bws_secret_token] = client
         return client
