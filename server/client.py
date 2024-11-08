@@ -59,7 +59,6 @@ class BWSClient:
         self.secret_key_map = {}
         self.secret_key_map_refresh = 0
         self.secret_info_ttl = secret_info_ttl
-        self.errored = False
 
     def __enter__(self):
         self.bws_client_lock.acquire()
@@ -73,18 +72,16 @@ class BWSClient:
             logger.debug("authenticating client")
             auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
             # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
-            self.bws_client.access_token_login(self.bws_token, auth_cache_file)
+            self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
         except Exception as e:
             logger.error("request failed with %s", e.args[0])
             if "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
-                self.errored = True
                 raise InvalidTokenException("Invalid token") from e
 
             if "429 Too Many Requests" in e.args[0]:
                 raise BWSAPIRateLimitExceededException(
                     "Auth rate limit") from e
 
-            self.errored = True
             raise e
 
     @staticmethod
@@ -96,7 +93,6 @@ class BWSClient:
             except Exception as e:
                 logger.error("request failed with %s", e.args[0])
 
-                self.errored = True
                 if "401 Unauthorized" in e.args[0]:
                     raise UnauthorizedTokenException(
                         "Unauthorized token") from e
@@ -121,17 +117,19 @@ class BWSClient:
     @_handle_api_errors
     def _get_secret_from_client(self, secret_uuid: str):
         data = self.bws_client.secrets().get(secret_uuid).data
-        try:
-            data.value = json.loads(data.value)
-            return data
-        except json.JSONDecodeError:
-            logging.info("json parse failed")
-        try:
-            data.value = yaml.safe_load(data.value)
-            return data
-        except yaml.YAMLError:
-            logging.info("yaml parse failed")
-
+        if data is not None:
+            try:
+                data.value = json.loads(data.value)
+                return data
+            except json.JSONDecodeError:
+                logging.info("json parse failed")
+            try:
+                data.value = yaml.safe_load(data.value)
+                return data
+            except yaml.YAMLError:
+                logging.info("yaml parse failed")
+        else:
+            logging.info("secret not found")
         return data
 
     def reset_cache(self):
