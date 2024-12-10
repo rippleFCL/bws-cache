@@ -27,13 +27,22 @@ root_logger = logging.getLogger()
 
 logger = logging.getLogger("bwscache.server")
 
-debug_environ = os.environ.get("DEBUG", "")
-debug = debug_environ.lower() == "true"
-org_id = os.environ.get("ORG_ID", "")
+DEBUG_ENVIRON = os.environ.get("DEBUG", "")
+DEBUG_MODE = DEBUG_ENVIRON.lower() == "true"
+ORG_ID = os.environ.get("ORG_ID", "")
+LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", "WARNING").upper()
+REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
+REFRESH_RATE = int(os.environ.get("REFRESH_RATE", "10"))
 
-if debug:
-    root_logger.setLevel(logging.DEBUG)
+mode_mapping = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
 
+logger.setLevel(mode_mapping[LOGGING_LEVEL])
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -71,8 +80,9 @@ if secret_ttl_environ:
 else:
     SECRET_INFO_TTL = 600
 
+
 prom_client = PromMetricsClient()
-client_manager = ThreadedBwsClientManager(prom_client, org_id, 10, 1)
+client_manager = ThreadedBwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
 
 
 def handle_api_errors(func):
@@ -159,4 +169,4 @@ def prometheus_metrics():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5050, debug=debug)
+    app.run(host="0.0.0.0", port=5050, debug=DEBUG_MODE)
