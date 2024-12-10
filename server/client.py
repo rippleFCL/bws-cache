@@ -334,7 +334,7 @@ class CachedClientRefresher:
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
-                except UnauthorizedTokenException:
+                except Exception as e:
                     logger.info(
                         "token expired for client",
                     )
