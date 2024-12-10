@@ -161,6 +161,8 @@ class BWSClient:
             for secret in secret_response.secrets:
                 logger.debug("got updated secret %s", secret.id)
                 secrets.append(SecretResponse(SecretMetaData(secret.key, str(secret.id)), secret.value))
+        else:
+            logger.debug("no secrets updated")
         return secrets
 
     @_handle_api_errors
@@ -327,9 +329,9 @@ class CachedClientRefresher:
         while True:
             clients = self.clients.list_clients()
             if clients:
-                logger.debug("refreshing clients %s", len(clients))
+                logger.debug("refreshing %s clients ", len(clients))
             for client_id, (token, client) in enumerate(clients):
-                logger.debug("refreshing client %s", client_id)
+                logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
                 except UnauthorizedTokenException:
