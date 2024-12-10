@@ -62,16 +62,16 @@ services:
 
 ## Environment Variables
 
-| Name                     | Info                                                  | Default |
-|--------------------------|-------------------------------------------------------|---------|
-| `ORG_ID`                 | Your BWS organisation ID.                             |         |
-| `SECRET_TTL`             | TTL of cached secrets and secret ID-to-key mappings.  | `600`   |
-| `DEBUG`                  | Enable debug logging.                                 | `false` |
-| `REFRESH_KEYMAP_ON_MISS` | Enable refreshing of the keymap on key miss.          | `true`  |
+| Name                     | Info                                                     | Default  |
+|--------------------------|----------------------------------------------------------|----------|
+| `ORG_ID`                 | Your BWS organisation ID.                                |          |
+| `REQUEST_RATE`           | How quickly to request secrets from upstream in seconds  | `1`      |
+| `REFRESH_RATE`           | how long between client refresh                          | `10`     |
+| `LOGGING_LEVEL`          | Enable debug logging.                                    | `WARNING`|
 
 # How It Works
 
-When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied. 
+When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied.
 
 You can use the `/reset` endpoint if you wish to manually empty the cache.
 

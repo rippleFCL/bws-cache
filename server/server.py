@@ -28,7 +28,6 @@ root_logger = logging.getLogger()
 logger = logging.getLogger("bwscache.server")
 
 DEBUG_ENVIRON = os.environ.get("DEBUG", "")
-DEBUG_MODE = DEBUG_ENVIRON.lower() == "true"
 ORG_ID = os.environ.get("ORG_ID", "")
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", "WARNING").upper()
 REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
@@ -168,5 +167,3 @@ def prometheus_metrics():
     return generated_data, 200, headers
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=DEBUG_MODE)
