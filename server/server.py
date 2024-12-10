@@ -21,25 +21,22 @@ from flask.json.provider import _default as _json_default
 from flask_restful import Api, Resource
 from prom_client import PromMetricsClient
 
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 root_logger = logging.getLogger()
 
 logger = logging.getLogger("bwscache.server")
 
-debug_environ = os.environ.get('DEBUG', "")
+debug_environ = os.environ.get("DEBUG", "")
 debug = debug_environ.lower() == "true"
-org_id=os.environ.get("ORG_ID", "")
+org_id = os.environ.get("ORG_ID", "")
 
 if debug:
     root_logger.setLevel(logging.DEBUG)
 
 
-
 ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
 root_logger.addHandler(ch)
 
@@ -59,9 +56,7 @@ class BWJSONEncoder(JSONEncoder):
 app = Flask(__name__)
 api = Api(app)
 
-app.config["RESTFUL_JSON"] = {
-    "cls": BWJSONEncoder
-}
+app.config["RESTFUL_JSON"] = {"cls": BWJSONEncoder}
 
 
 refresh_keymap_on_miss = os.environ.get("REFRESH_KEYMAP_ON_MISS", "").lower() == "true"
@@ -78,7 +73,6 @@ else:
 
 prom_client = PromMetricsClient()
 client_manager = ThreadedBwsClientManager(prom_client, org_id, 10, 1)
-
 
 
 def handle_api_errors(func):
@@ -102,6 +96,7 @@ def handle_api_errors(func):
                 return {"error": "secret not found"}, 404
 
         return {"error": "invalid auth header"}, 400
+
     return wrapper
 
 
@@ -114,7 +109,9 @@ def prom_stats(endpoint):
             prom_client.tick_http_request_total(endpoint, return_code)
             prom_client.tick_http_request_duration(endpoint, time.time() - st)
             return return_data, return_code, *vals
+
         return inner
+
     return wrapper
 
 
@@ -122,7 +119,7 @@ class BwsReset(Resource):
     @prom_stats("/reset")
     @handle_api_errors
     def get(self, auth_token):
-        client =  client_manager.get_client_by_token(auth_token)
+        client = client_manager.get_client_by_token(auth_token)
         client.reset_cache()
         return {"status": "success"}, 200
 
@@ -131,21 +128,25 @@ class BwsCacheId(Resource):
     @prom_stats("/id")
     @handle_api_errors
     def get(self, auth_token, secret_id):
-        client =  client_manager.get_client_by_token(auth_token)
+        client = client_manager.get_client_by_token(auth_token)
         return client.get_secret_by_id(secret_id), 200
 
 
 class BwsCacheKey(Resource):
     @prom_stats("/key")
     @handle_api_errors
-    def get(self, auth_token, secret_id, ):
-        client =  client_manager.get_client_by_token(auth_token)
+    def get(
+        self,
+        auth_token,
+        secret_id,
+    ):
+        client = client_manager.get_client_by_token(auth_token)
         return client.get_secret_by_key(secret_id).to_json(), 200
 
 
-api.add_resource(BwsReset, '/reset')
-api.add_resource(BwsCacheId, '/id/<string:secret_id>')
-api.add_resource(BwsCacheKey, '/key/<string:secret_id>')
+api.add_resource(BwsReset, "/reset")
+api.add_resource(BwsCacheId, "/id/<string:secret_id>")
+api.add_resource(BwsCacheKey, "/key/<string:secret_id>")
 
 
 @app.route("/metrics")
@@ -153,9 +154,9 @@ def prometheus_metrics():
     accept_header = request.headers.get("Accept")
 
     generated_data, content_type = prom_client.generate_metrics(accept_header)
-    headers = {'Content-Type': content_type}
+    headers = {"Content-Type": content_type}
     return generated_data, 200, headers
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5050, debug=debug)

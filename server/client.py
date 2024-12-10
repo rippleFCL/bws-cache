@@ -2,23 +2,16 @@ import datetime
 import functools
 import json
 import logging
-import os
 from dataclasses import dataclass
 from queue import Queue
-from re import S
 from threading import Lock, Thread
 import time
-from typing import Protocol
-from weakref import ref
-from flask import cli
 import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
 from prom_client import PromMetricsClient
 import sys
 
-logger  = logging.getLogger("bwscache.client")
-
-
+logger = logging.getLogger("bwscache.client")
 
 
 class InvalidTokenException(Exception):
@@ -36,19 +29,23 @@ class UnauthorizedTokenException(Exception):
 class BWSAPIRateLimitExceededException(Exception):
     pass
 
+
 class MissingSecretException(Exception):
     pass
 
+
 class UnknownKeyException(Exception):
     pass
+
 
 @dataclass
 class SecretMetaData:
     key: str
     id: str
 
+
 class SecretResponse:
-    def __init__(self, metadata: SecretMetaData, value:str):
+    def __init__(self, metadata: SecretMetaData, value: str):
         self._metadata = metadata
         self._id = id
         self._value = value
@@ -86,11 +83,7 @@ class SecretResponse:
         return None
 
     def to_json(self):
-        return {
-            "key": self.key,
-            "id": self.id,
-            "value": self.value
-        }
+        return {"key": self.key, "id": self.id, "value": self.value}
 
 
 class BWSClient:
@@ -125,8 +118,7 @@ class BWSClient:
                 raise InvalidTokenException("Invalid token") from e
 
             if "429 Too Many Requests" in e.args[0]:
-                raise BWSAPIRateLimitExceededException(
-                    "Auth rate limit") from e
+                raise BWSAPIRateLimitExceededException("Auth rate limit") from e
 
             raise e
 
@@ -140,11 +132,9 @@ class BWSClient:
                 logger.error("request failed with %s", e.args[0])
 
                 if "401 Unauthorized" in e.args[0]:
-                    raise UnauthorizedTokenException(
-                        "Unauthorized token") from e
+                    raise UnauthorizedTokenException("Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
-                    raise BWSAPIRateLimitExceededException(
-                        "too many requests") from e
+                    raise BWSAPIRateLimitExceededException("too many requests") from e
                 elif "404 Not Found" in e.args[0]:
                     raise BWSSecretNotFound() from e
                 raise e
@@ -183,49 +173,15 @@ class BWSClient:
         return None
 
 
-    # def reset_cache(self):
-    #     self.secret_cache = {}
-    #     self.secret_cache_ttl = {}
-    #     logger.debug("resetting secret cache")
-    #     self.secret_key_map = {}
-    #     self.secret_key_map_refresh = 0
-    #     logger.debug("resetting secret key map")
-#     def _get_secret(self, secret_id):
-#         cached_secret = self.secret_cache.get(secret_id, None)
-#         if cached_secret is None or time.time() - self.secret_cache_ttl[secret_id] > self.secret_info_ttl:
-#             logger.debug("cache miss for secret %s", secret_id)
-#             self.prom_client.tick_cache_miss("secret")
-#             self.secret_cache[secret_id] = self._get_secret_from_client(secret_id)
-#             self.secret_cache_ttl[secret_id] = time.time()
-#         else:
-#             logger.debug("cache hit for secret %s", secret_id)
-#             self.prom_client.tick_cache_hits("secret")
-#         return self.secret_cache[secret_id]
-#
-#
-#     def get_secret_by_key(self, secret_key, org_id, refresh_keymap_on_miss: bool = False):
-#         if not self.secret_key_map or time.time() - self.secret_key_map_refresh > self.secret_info_ttl:
-#             logger.debug("regenerating secret key map")
-#             self._gen_secret_key_map(org_id)
-#             self.prom_client.tick_cache_miss("key_map")
-#
-#         elif not secret_key in self.secret_key_map and refresh_keymap_on_miss:
-#             logger.debug("regenerating secret key map")
-#             self._gen_secret_key_map(org_id)
-#             self.prom_client.tick_cache_miss("key_map")
-#
-#         else:
-#             self.prom_client.tick_cache_hits("key_map")
-#
-#         return self._get_secret(self.secret_key_map[secret_key])
-
 class RequesterCrash(Exception):
     pass
+
 
 @dataclass
 class RequestContext:
     client: BWSClient
     id: str
+
 
 class ClientRequester:
     def __init__(self, request_interval: int):
@@ -261,6 +217,7 @@ class ClientRequester:
             self.request_queue.put(RequestContext(client, secret_id))
             logger.debug("waiting for secret %s", secret_id)
             return self.response_queue.get()
+
 
 class CachedBWSClient:
     def __init__(self, bws_secret_token: str, org_id: str, requester: ClientRequester, prom_client: PromMetricsClient):
@@ -334,6 +291,7 @@ class CachedBWSClient:
             self.secret_cache = {}
             self.key_map = {}
 
+
 class ClientList:
     def __init__(self):
         self._clients: dict[str, CachedBWSClient] = {}
@@ -368,14 +326,16 @@ class CachedClientRefresher:
     def _refresh_loop(self):
         while True:
             clients = self.clients.list_clients()
-            if clients :
+            if clients:
                 logger.debug("refreshing clients %s", len(clients))
             for client_id, (token, client) in enumerate(clients):
                 logger.debug("refreshing client %s", client_id)
                 try:
                     client.refresh_cache()
                 except UnauthorizedTokenException:
-                    logger.info("token expired for client",)
+                    logger.info(
+                        "token expired for client",
+                    )
                     self.clients.remove_client(token)
                 time.sleep(self.refresh_interval)
 
@@ -397,8 +357,11 @@ class BWSClientManager:
             self.clients[bws_secret_token] = client
         return client
 
+
 class ThreadedBwsClientManager:
-    def __init__(self, prom_client: PromMetricsClient, org_id: str, secret_refresh_interval: int, secret_request_interval: int):
+    def __init__(
+        self, prom_client: PromMetricsClient, org_id: str, secret_refresh_interval: int, secret_request_interval: int
+    ):
         self.org_id = org_id
         self.prom_client = prom_client
         self.client_list = self._make_client_list()
