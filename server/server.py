@@ -7,9 +7,15 @@ from json import JSONEncoder
 from typing import Any
 
 from bitwarden_sdk.schemas import SecretResponse
-from client import (BWSAPIRateLimitExceededException, BWSClientManager,
-                    InvalidTokenException, UnauthorizedTokenException,
-                    UnsetOrgIdException, BWSSecretNotFound, BWSKeyNotFound)
+from client import (
+    BWSAPIRateLimitExceededException,
+    MissingSecretException,
+    ThreadedBwsClientManager,
+    InvalidTokenException,
+    UnauthorizedTokenException,
+    UnknownKeyException,
+    UnsetOrgIdException,
+)
 from flask import Flask, request
 from flask.json.provider import _default as _json_default
 from flask_restful import Api, Resource
@@ -18,21 +24,24 @@ from prom_client import PromMetricsClient
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+root_logger = logging.getLogger()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("bwscache.server")
 
 debug_environ = os.environ.get('DEBUG', "")
 debug = debug_environ.lower() == "true"
+org_id=os.environ.get("ORG_ID", "")
 
 if debug:
-    logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.DEBUG)
+
 
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
-logger.addHandler(ch)
+root_logger.addHandler(ch)
 
 
 class BWJSONEncoder(JSONEncoder):
@@ -68,7 +77,8 @@ else:
     SECRET_INFO_TTL = 600
 
 prom_client = PromMetricsClient()
-client_manager = BWSClientManager(SECRET_INFO_TTL, prom_client)
+client_manager = ThreadedBwsClientManager(prom_client, org_id, 10, 1)
+
 
 
 def handle_api_errors(func):
@@ -85,11 +95,12 @@ def handle_api_errors(func):
             except BWSAPIRateLimitExceededException:
                 return {"error": "Rate limited"}, 429
             except UnsetOrgIdException:
-                return {"error": "Unset org id"}, 400
-            except BWSSecretNotFound:
-                return {"error": "Secret not found"}, 404
-            except BWSKeyNotFound:
-                return {"error": "Key not found"}, 404
+                return {"error": "unset org id"}, 400
+            except UnknownKeyException:
+                return {"error": "unknown key"}, 404
+            except MissingSecretException:
+                return {"error": "secret not found"}, 404
+
         return {"error": "invalid auth header"}, 400
     return wrapper
 
@@ -128,9 +139,8 @@ class BwsCacheKey(Resource):
     @prom_stats("/key")
     @handle_api_errors
     def get(self, auth_token, secret_id, ):
-        org_id=os.environ.get("ORG_ID", request.headers.get("OrganizationId", ""))
         client =  client_manager.get_client_by_token(auth_token)
-        return client.get_secret_by_key(secret_id, org_id, refresh_keymap_on_miss), 200
+        return client.get_secret_by_key(secret_id).to_json(), 200
 
 
 api.add_resource(BwsReset, '/reset')
@@ -148,4 +158,4 @@ def prometheus_metrics():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5050)
+    app.run(host="0.0.0.0", port=5050, debug=debug)
