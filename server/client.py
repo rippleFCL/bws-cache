@@ -342,25 +342,7 @@ class CachedClientRefresher:
                 time.sleep(self.refresh_interval)
 
 
-class BWSClientManager:
-    def __init__(self, prom_client: PromMetricsClient, org_id: str):
-        self.org_id = org_id
-        self.prom_client = prom_client
-        self.clients = {}
-
-    def _make_client(self, bws_secret_token: str):
-        return BWSClient(bws_secret_token, self.org_id)
-
-    def get_client_by_token(self, bws_secret_token) -> BWSClient:
-        client = self.clients.get(bws_secret_token, None)
-        if client is None:
-            client = self._make_client(bws_secret_token)
-            client.auth()
-            self.clients[bws_secret_token] = client
-        return client
-
-
-class ThreadedBwsClientManager:
+class BwsClientManager:
     def __init__(
         self, prom_client: PromMetricsClient, org_id: str, secret_refresh_interval: int, secret_request_interval: int
     ):

@@ -10,7 +10,7 @@ from bitwarden_sdk.schemas import SecretResponse
 from client import (
     BWSAPIRateLimitExceededException,
     MissingSecretException,
-    ThreadedBwsClientManager,
+    BwsClientManager,
     InvalidTokenException,
     UnauthorizedTokenException,
     UnknownKeyException,
@@ -81,7 +81,7 @@ else:
 
 
 prom_client = PromMetricsClient()
-client_manager = ThreadedBwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
+client_manager = BwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
 
 
 def handle_api_errors(func):
@@ -165,5 +165,3 @@ def prometheus_metrics():
     generated_data, content_type = prom_client.generate_metrics(accept_header)
     headers = {"Content-Type": content_type}
     return generated_data, 200, headers
-
-
