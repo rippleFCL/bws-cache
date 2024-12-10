@@ -42,7 +42,7 @@ mode_mapping = {
     "CRITICAL": logging.CRITICAL,
 }
 
-logger.setLevel(mode_mapping[LOGGING_LEVEL])
+root_logger.setLevel(mode_mapping[LOGGING_LEVEL])
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
