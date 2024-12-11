@@ -62,30 +62,47 @@ services:
 
 ## Environment Variables
 
-| Name                     | Info                                                     | Default  |
-|--------------------------|----------------------------------------------------------|----------|
-| `ORG_ID`                 | Your BWS organisation ID.                                |          |
-| `REQUEST_RATE`           | How quickly to request secrets from upstream in seconds  | `1`      |
-| `REFRESH_RATE`           | how long between client refresh                          | `10`     |
-| `LOGGING_LEVEL`          | Enable debug logging.                                    | `WARNING`|
+| Name                  | Info                                                                                     | Default  |
+|-----------------------|------------------------------------------------------------------------------------------|----------|
+| `ORG_ID`              | Your BWS organisation ID.                                                                |          |
+| `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`  |
+| `REQUEST_RATE`        | Seconds between each secret update request from BWS API.                                 | `1`      |
+| `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`     |
+| `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING`|
 
 # How It Works
 
 When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied.
 
-You can use the `/reset` endpoint if you wish to manually empty the cache.
+Since bws-cache allows for secret lookups by key (as opposed to ID), a feature that is not yet natively available in first-party BWS clients, it also caches a map of key/secret ID pairs. We'll call this the keymap cache.
 
-Since bws-cache allows for secret lookups by key (as opposed to ID), a feature that is not yet natively available in first-party BWS clients, it also caches a map of secret ID/key pairs. We'll call this the keymap cache. The keymap cache expires just as the secret cache does, respecting `SECRET_TTL`.
+## Cache and Clients
 
-Upon lookup of a secret ID that **does not** exist in cache, bws-cache will query the BWS API for the secret, store it in the cache, and return the secret object to the client.
+Each token that is used to query bws-cache has its own authenticated client, keymap cache, and secret cache.
 
-Upon lookup of a secret ID that **does** exist in cache, bws-cache will check the timestamp of the secret's cache entry to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.
-If the secret in cache has expired, bws-cache will query the BWS API for the secret, re-cache it, and return the secret object to the client.
+For example, running the following command would cause bws-cache to create a distinct client for `token_A`, in which `secret_A` is cached:
 
-Upon lookup of a secret key that **does not** exist in the key map cache and if `REFRESH_KEYMAP_ON_MISS` is true, bws-cache queries the BWS API for a list of every secret in the specified `ORG_ID`. It then generates and stores the keymap cache and returns the secret to the client if it exists or returns missing secret.
+`curl -H "Authorization: Bearer token_A" http://localhost:5000/key/secret_A`
 
-Upon lookup of a secret key that **does** exist in cache, bws-cache will check the timestamp of the keymap cache to ensure it has not expired according to `SECRET_TTL` and return the secret object to the client.
-If the keymap cache has expired, it will first be refresh as described above, after which the secret object will be returned to the client.
+Similarly, the following command would do the same for `token_B` and `secret_B` respectively:
+
+`curl -H "Authorization: Bearer token_B" http://localhost:5000/key/secret_B`
+
+Since the secret and keymap caches are isolated to each client, `token_A`'s client could not access a secret cached by `token_B`'s client and vice-versa.
+
+### Resetting Cache
+
+You can use the `/reset` endpoint if you wish to manually empty the client's secret cache.
+
+### Secret Lookups
+
+Secrets are **always** returned from cache. If the requested secret ID doesn't exist in cache, bws-cache request the secret from BWS, caches it, and then serves it.
+
+For key lookups (`/key/<secret key>`), the keymap cache is searched for the provided key. If found, the secret ID is retrieved from the keymap cache and used to search the secret cache. The rest of the process is then as described above for a standard secret ID lookup. If the keymap cache is empty, bws-cache pulls a list of all secret IDs and keys to build the keymap cache.
+
+Each client syncs updated secrets in the background on a defined schedule (see `REFRESH_RATE`). Only one client updates at a time, respecting the rate limit defined with `REFRESH_RATE`, to avoid the BWS API's rate limits.
+
+# Request Flow Diagram
 
 ```mermaid
 ---
@@ -94,18 +111,14 @@ title: bws-cache request flow
 flowchart TD
     Client(Client) --- BwsCache(bws-cache)
     BwsCache -->|ID lookup| IsSecretCached{Secret cached?}
-    IsSecretCached -->|Yes| IsSecretExpired{Cached secret older than TTL?}
-    IsSecretExpired -->|No| ReturnSecret[Return secret to client]
+
     IsSecretCached -->|No| QuerySecret[Request secret from BWS API]
-    IsSecretExpired -->|Yes| QuerySecret
     QuerySecret --> CacheSecret[Cache secret]
     CacheSecret --> ReturnSecret
-    ReturnSecret --> Client
     BwsCache -->|key lookup| IsKeyCacheExist{Keymap cache exists?}
-    IsKeyCacheExist -->|Yes| IsKeyCacheExpired{Keymap cache older than TTL?}
-    IsKeyCacheExpired -->|No| IsSecretCached
     IsKeyCacheExist -->|No| QuerySecretList[Request list of all secrets from BWS API]
+    IsKeyCacheExist -->|yes| LookupIDFromKey[Get secret id from keymap]
+    LookupIDFromKey --> |ID lookup| IsSecretCached{Secret cached?}
     QuerySecretList -->GenKeyCache[Generate keymap cache]
-    GenKeyCache --> IsSecretCached
-    IsKeyCacheExpired -->|Yes| QuerySecretList
+    GenKeyCache --> LookupIDFromKey[Get secret id from keymap]
 ```
