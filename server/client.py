@@ -75,16 +75,16 @@ class SecretResponse:
             else:
                 try:
                     data = json.loads(data)
-                    logger.info("json parse succeeded")
+                    logger.debug("json parse succeeded")
                     return data
                 except json.JSONDecodeError:
-                    logger.info("json parse failed... trying yaml")
+                    logger.debug("json parse failed... trying yaml")
                 try:
                     data = yaml.safe_load(data)
-                    logger.info("yaml parse succeeded")
+                    logger.debug("yaml parse succeeded")
                     return data
                 except yaml.YAMLError:
-                    logger.info("yaml parse failed... return raw secret")
+                    logger.debug("yaml parse failed... return raw secret")
         else:
             logger.info("secret not found")
         return None

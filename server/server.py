@@ -27,9 +27,8 @@ root_logger = logging.getLogger()
 
 logger = logging.getLogger("bwscache.server")
 
-DEBUG_ENVIRON = os.environ.get("DEBUG", "")
 ORG_ID = os.environ.get("ORG_ID", "")
-LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL", "WARNING").upper()
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
 REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
 REFRESH_RATE = int(os.environ.get("REFRESH_RATE", "10"))
 
@@ -41,7 +40,7 @@ mode_mapping = {
     "CRITICAL": logging.CRITICAL,
 }
 
-root_logger.setLevel(mode_mapping[LOGGING_LEVEL])
+root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
