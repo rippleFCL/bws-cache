@@ -40,6 +40,9 @@ mode_mapping = {
     "CRITICAL": logging.CRITICAL,
 }
 
+if not ORG_ID:
+    raise ValueError("ORG_ID is required")
+
 root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
 ch = logging.StreamHandler()
