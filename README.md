@@ -115,10 +115,10 @@ flowchart TD
     IsSecretCached -->|Yes| CacheSecret[Cache secret]
     QuerySecret --> CacheSecret[Cache secret]
     CacheSecret --> ReturnSecret
-    BwsCache -->|key lookup| IsKeyCacheExist{Keymap cache exists?}
+    BwsCache -->|Key lookup| IsKeyCacheExist{Keymap cache exists?}
     IsKeyCacheExist -->|No| QuerySecretList[Request list of all secrets from BWS API]
-    IsKeyCacheExist -->|Yes| LookupIDFromKey[Get secret id from keymap]
+    IsKeyCacheExist -->|Yes| LookupIDFromKey[Get secret ID from keymap]
     LookupIDFromKey --> |ID lookup| IsSecretCached{Secret cached?}
     QuerySecretList -->GenKeyCache[Generate keymap cache]
-    GenKeyCache --> LookupIDFromKey[Get secret id from keymap]
+    GenKeyCache --> LookupIDFromKey[Get secret ID from keymap]
 ```
