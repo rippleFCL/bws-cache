@@ -111,13 +111,13 @@ title: bws-cache request flow
 flowchart TD
     Client(Client) --- BwsCache(bws-cache)
     BwsCache -->|ID lookup| IsSecretCached{Secret cached?}
-
     IsSecretCached -->|No| QuerySecret[Request secret from BWS API]
+    IsSecretCached -->|Yes| CacheSecret[Cache secret]
     QuerySecret --> CacheSecret[Cache secret]
     CacheSecret --> ReturnSecret
     BwsCache -->|key lookup| IsKeyCacheExist{Keymap cache exists?}
     IsKeyCacheExist -->|No| QuerySecretList[Request list of all secrets from BWS API]
-    IsKeyCacheExist -->|yes| LookupIDFromKey[Get secret id from keymap]
+    IsKeyCacheExist -->|Yes| LookupIDFromKey[Get secret id from keymap]
     LookupIDFromKey --> |ID lookup| IsSecretCached{Secret cached?}
     QuerySecretList -->GenKeyCache[Generate keymap cache]
     GenKeyCache --> LookupIDFromKey[Get secret id from keymap]
