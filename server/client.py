@@ -10,6 +10,10 @@ import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
 from prom_client import PromMetricsClient
 import sys
+import os
+
+PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
+
 
 logger = logging.getLogger("bwscache.client")
 
@@ -45,7 +49,7 @@ class SecretMetaData:
 
 
 class SecretResponse:
-    def __init__(self, metadata: SecretMetaData, value: str):
+    def __init__(self, metadata: SecretMetaData, value: str | None):
         self._metadata = metadata
         self._id = id
         self._value = value
@@ -66,18 +70,21 @@ class SecretResponse:
     def value(self):
         data = self._value
         if data is not None:
-            try:
-                data = json.loads(data)
-                logger.info("json parse succeeded")
+            if not PARSE_SECRET_VALUES:
                 return data
-            except json.JSONDecodeError:
-                logger.info("json parse failed... trying yaml")
-            try:
-                data = yaml.safe_load(data)
-                logger.info("yaml parse succeeded")
-                return data
-            except yaml.YAMLError:
-                logger.info("yaml parse failed... return raw secret")
+            else:
+                try:
+                    data = json.loads(data)
+                    logger.info("json parse succeeded")
+                    return data
+                except json.JSONDecodeError:
+                    logger.info("json parse failed... trying yaml")
+                try:
+                    data = yaml.safe_load(data)
+                    logger.info("yaml parse succeeded")
+                    return data
+                except yaml.YAMLError:
+                    logger.info("yaml parse failed... return raw secret")
         else:
             logger.info("secret not found")
         return None
