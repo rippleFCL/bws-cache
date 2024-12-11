@@ -14,4 +14,4 @@ COPY server/ .
 
 EXPOSE 5000
 
-ENTRYPOINT [ "python", "server.py" ]
+ENTRYPOINT [ "python", "-m", "flask", "--app", "server:app", "run", "--host", "0.0.0.0" ]
