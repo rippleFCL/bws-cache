@@ -7,32 +7,45 @@ from json import JSONEncoder
 from typing import Any
 
 from bitwarden_sdk.schemas import SecretResponse
-from client import (BWSAPIRateLimitExceededException, BWSClientManager,
-                    InvalidTokenException, UnauthorizedTokenException,
-                    UnsetOrgIdException, BWSSecretNotFound, BWSKeyNotFound)
+from client import (
+    BWSAPIRateLimitExceededException,
+    MissingSecretException,
+    BwsClientManager,
+    InvalidTokenException,
+    UnauthorizedTokenException,
+    UnknownKeyException,
+    UnsetOrgIdException,
+)
 from flask import Flask, request
 from flask.json.provider import _default as _json_default
 from flask_restful import Api, Resource
 from prom_client import PromMetricsClient
 
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
+root_logger = logging.getLogger()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("bwscache.server")
 
-debug_environ = os.environ.get('DEBUG', "")
-debug = debug_environ.lower() == "true"
+ORG_ID = os.environ.get("ORG_ID", "")
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
+REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
+REFRESH_RATE = int(os.environ.get("REFRESH_RATE", "10"))
 
-if debug:
-    logger.setLevel(logging.DEBUG)
+mode_mapping = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
 
+root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
 ch = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
-logger.addHandler(ch)
+root_logger.addHandler(ch)
 
 
 class BWJSONEncoder(JSONEncoder):
@@ -50,9 +63,7 @@ class BWJSONEncoder(JSONEncoder):
 app = Flask(__name__)
 api = Api(app)
 
-app.config["RESTFUL_JSON"] = {
-    "cls": BWJSONEncoder
-}
+app.config["RESTFUL_JSON"] = {"cls": BWJSONEncoder}
 
 
 refresh_keymap_on_miss = os.environ.get("REFRESH_KEYMAP_ON_MISS", "").lower() == "true"
@@ -67,8 +78,9 @@ if secret_ttl_environ:
 else:
     SECRET_INFO_TTL = 600
 
+
 prom_client = PromMetricsClient()
-client_manager = BWSClientManager(SECRET_INFO_TTL, prom_client)
+client_manager = BwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
 
 
 def handle_api_errors(func):
@@ -85,12 +97,14 @@ def handle_api_errors(func):
             except BWSAPIRateLimitExceededException:
                 return {"error": "Rate limited"}, 429
             except UnsetOrgIdException:
-                return {"error": "Unset org id"}, 400
-            except BWSSecretNotFound:
-                return {"error": "Secret not found"}, 404
-            except BWSKeyNotFound:
-                return {"error": "Key not found"}, 404
+                return {"error": "unset org id"}, 400
+            except UnknownKeyException:
+                return {"error": "unknown key"}, 404
+            except MissingSecretException:
+                return {"error": "secret not found"}, 404
+
         return {"error": "invalid auth header"}, 400
+
     return wrapper
 
 
@@ -103,7 +117,9 @@ def prom_stats(endpoint):
             prom_client.tick_http_request_total(endpoint, return_code)
             prom_client.tick_http_request_duration(endpoint, time.time() - st)
             return return_data, return_code, *vals
+
         return inner
+
     return wrapper
 
 
@@ -111,37 +127,34 @@ class BwsReset(Resource):
     @prom_stats("/reset")
     @handle_api_errors
     def get(self, auth_token):
-        with client_manager.get_client_by_token(auth_token) as client:
-            if not client.errored:
-                client.authenticate(cache=False)
-                client.reset_cache()
-                return {"status": "success"}, 200
-            return {"error": "errored token"}, 401
+        client = client_manager.get_client_by_token(auth_token)
+        client.reset_cache()
+        return {"status": "success"}, 200
 
 
 class BwsCacheId(Resource):
     @prom_stats("/id")
     @handle_api_errors
     def get(self, auth_token, secret_id):
-        with client_manager.get_client_by_token(auth_token) as client:
-            client.authenticate()
-            return client.get_secret_by_id(secret_id), 200
+        client = client_manager.get_client_by_token(auth_token)
+        return client.get_secret_by_id(secret_id), 200
 
 
 class BwsCacheKey(Resource):
     @prom_stats("/key")
     @handle_api_errors
-    def get(self, auth_token, secret_id, ):
-        org_id = os.environ.get(
-            "ORG_ID", request.headers.get("OrganizationId", ""))
-        with client_manager.get_client_by_token(auth_token) as client:
-            client.authenticate()
-            return client.get_secret_by_key(secret_id, org_id, refresh_keymap_on_miss), 200
+    def get(
+        self,
+        auth_token,
+        secret_id,
+    ):
+        client = client_manager.get_client_by_token(auth_token)
+        return client.get_secret_by_key(secret_id).to_json(), 200
 
 
-api.add_resource(BwsReset, '/reset')
-api.add_resource(BwsCacheId, '/id/<string:secret_id>')
-api.add_resource(BwsCacheKey, '/key/<string:secret_id>')
+api.add_resource(BwsReset, "/reset")
+api.add_resource(BwsCacheId, "/id/<string:secret_id>")
+api.add_resource(BwsCacheKey, "/key/<string:secret_id>")
 
 
 @app.route("/metrics")
@@ -149,9 +162,5 @@ def prometheus_metrics():
     accept_header = request.headers.get("Accept")
 
     generated_data, content_type = prom_client.generate_metrics(accept_header)
-    headers = {'Content-Type': content_type}
+    headers = {"Content-Type": content_type}
     return generated_data, 200, headers
-
-
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
