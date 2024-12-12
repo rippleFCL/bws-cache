@@ -2,16 +2,17 @@ import datetime
 import functools
 import json
 import logging
+import os
+import sys
+import time
 from dataclasses import dataclass
 from queue import Queue
 from threading import Lock, Thread
-import time
+
 import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
 from models import ResetStats
 from prom_client import PromMetricsClient
-import sys
-import os
 
 PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
 
@@ -318,6 +319,7 @@ class CachedBWSClient:
             self.secret_cache = {}
             self.key_map = {}
         return ResetStats(secret_cache_len, key_map_len)
+
 
 class ClientList:
     def __init__(self):

@@ -6,23 +6,22 @@ from typing import Annotated
 
 from client import (
     BWSAPIRateLimitExceededException,
-    MissingSecretException,
     BwsClientManager,
     InvalidTokenException,
+    MissingSecretException,
     UnauthorizedTokenException,
     UnknownKeyException,
 )
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi.responses import PlainTextResponse
 from models import (
     ErrorResponse,
     MetricsResponse,
-    ResetStats,
     ResetResponse,
+    ResetStats,
     SecretResponse,
 )
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
-from fastapi.responses import PlainTextResponse
 from prom_client import PromMetricsClient
-
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -180,11 +179,18 @@ def get_key(
     return client.get_secret_by_key(secret_key).to_json()
 
 
-@api.get("/metrics", response_model=MetricsResponse, responses={
-    200: {"model": MetricsResponse, "description": "Successful response with metrics data"},
-    400: {"model": ErrorResponse, "description": "Bad request"},
-    500: {"model": ErrorResponse, "description": "Internal server error"},
-})
+@api.get(
+    "/metrics",
+    response_model=MetricsResponse,
+    responses={
+        200: {
+            "model": MetricsResponse,
+            "description": "Successful response with metrics data",
+        },
+        400: {"model": ErrorResponse, "description": "Bad request"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
     generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
