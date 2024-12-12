@@ -139,7 +139,7 @@ class BWSClient:
                 elif "429 Too Many Requests" in e.args[0]:
                     raise BWSAPIRateLimitExceededException("too many requests") from e
                 elif "404 Not Found" in e.args[0]:
-                    raise BWSSecretNotFound() from e
+                    raise MissingSecretException() from e
                 raise e
 
         return wrapper
