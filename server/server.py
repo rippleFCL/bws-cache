@@ -1,11 +1,8 @@
-from email.policy import HTTP
 import functools
 import logging
 import os
 import time
-from datetime import datetime
-from json import JSONEncoder
-from typing import Any, Annotated
+from typing import Annotated
 
 from client import (
     BWSAPIRateLimitExceededException,
@@ -70,6 +67,7 @@ else:
 prom_client = PromMetricsClient()
 client_manager = BwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
 
+
 @api.middleware("http")
 async def prom_middleware(request: Request, call_next):
     api_mapping = [
@@ -104,12 +102,15 @@ def handle_api_errors(func):
             return Response("Unknown key", status_code=404)
         except MissingSecretException:
             return Response("Secret not found", status_code=404)
+
     return wrapper
+
 
 def handle_auth(authorization: Annotated[str, Header()]):
     if authorization.startswith("Bearer "):
         return authorization.split()[-1]
     raise HTTPException(status_code=401, detail="Invalid token")
+
 
 @api.get("/reset")
 @handle_api_errors
@@ -118,11 +119,13 @@ def get(authorization: Annotated[str, Depends(handle_auth)]):
     client.reset_cache()
     return {"status": "success"}
 
+
 @api.get("/id/{secret_id}")
 @handle_api_errors
 def get(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_id(secret_id).to_json()
+
 
 @api.get("/key/{secret_key}")
 @handle_api_errors

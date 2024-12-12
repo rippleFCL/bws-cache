@@ -117,7 +117,10 @@ class BWSClient:
             self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
         except Exception as e:
             logger.error("request failed with %s", e.args[0])
-            if "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
+            if (
+                "400 Bad Request" in e.args[0]
+                or "Access token is not in a valid format" in e.args[0]
+            ):
                 raise InvalidTokenException("Invalid token") from e
 
             if "429 Too Many Requests" in e.args[0]:
@@ -158,12 +161,18 @@ class BWSClient:
         secrets: list[SecretResponse] = []
         logger.debug("getting updated secrets")
         latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
-        secret_response = self.bws_client.secrets().sync(self.org_id, self.last_sync).data
+        secret_response = (
+            self.bws_client.secrets().sync(self.org_id, self.last_sync).data
+        )
         self.last_sync = latest_sync
         if secret_response and secret_response.has_changes and secret_response.secrets:
             for secret in secret_response.secrets:
                 logger.debug("got updated secret %s", secret.id)
-                secrets.append(SecretResponse(SecretMetaData(secret.key, str(secret.id)), secret.value))
+                secrets.append(
+                    SecretResponse(
+                        SecretMetaData(secret.key, str(secret.id)), secret.value
+                    )
+                )
         else:
             logger.debug("no secrets updated")
         return secrets
@@ -208,7 +217,9 @@ class ClientRequester:
             try:
                 self.response_queue.put(response, timeout=self.request_interval)
             except TimeoutError:
-                logger.critical("client did not consume the response, request thread unrecoverable")
+                logger.critical(
+                    "client did not consume the response, request thread unrecoverable"
+                )
                 self.crashed = True
                 return
             time.sleep(self.request_interval)
@@ -225,7 +236,13 @@ class ClientRequester:
 
 
 class CachedBWSClient:
-    def __init__(self, bws_secret_token: str, org_id: str, requester: ClientRequester, prom_client: PromMetricsClient):
+    def __init__(
+        self,
+        bws_secret_token: str,
+        org_id: str,
+        requester: ClientRequester,
+        prom_client: PromMetricsClient,
+    ):
         self.prom_client = prom_client
         self.client = self._make_client(bws_secret_token, org_id)
         self.requester = requester
@@ -286,7 +303,9 @@ class CachedBWSClient:
             self.reset_cache()
         with self.cache_lock:
             for secret in secrets:
-                logger.debug("adding cache for secret %s, key %s", secret.id, secret.key)
+                logger.debug(
+                    "adding cache for secret %s, key %s", secret.id, secret.key
+                )
                 self.secret_cache[secret.id] = secret
                 self.key_map[secret.key] = secret.id
 
@@ -337,7 +356,7 @@ class CachedClientRefresher:
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
-                except Exception as e:
+                except Exception:
                     logger.info(
                         "token expired for client",
                     )
@@ -347,7 +366,11 @@ class CachedClientRefresher:
 
 class BwsClientManager:
     def __init__(
-        self, prom_client: PromMetricsClient, org_id: str, secret_refresh_interval: int, secret_request_interval: int
+        self,
+        prom_client: PromMetricsClient,
+        org_id: str,
+        secret_refresh_interval: int,
+        secret_request_interval: int,
     ):
         self.org_id = org_id
         self.prom_client = prom_client
@@ -372,7 +395,9 @@ class BwsClientManager:
         return ClientList()
 
     def _make_client(self, bws_secret_token: str):
-        return CachedBWSClient(bws_secret_token, self.org_id, self.requester, self.prom_client)
+        return CachedBWSClient(
+            bws_secret_token, self.org_id, self.requester, self.prom_client
+        )
 
     def get_client_by_token(self, bws_secret_token) -> CachedBWSClient:
         client = self.client_list.get(bws_secret_token)
