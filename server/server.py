@@ -124,15 +124,15 @@ def get(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_id(secret_id)
 
-@api.get("/key/{key_id}")
+@api.get("/key/{secret_key}")
 @handle_api_errors
 def get(
     authorization: Annotated[str, Depends(handle_auth)],
-    key_id: str,
+    secret_key: str,
 ):
     print(authorization)
     client = client_manager.get_client_by_token(authorization)
-    return client.get_secret_by_key(key_id).to_json()
+    return client.get_secret_by_key(secret_key).to_json()
 
 
 @api.route("/metrics")
