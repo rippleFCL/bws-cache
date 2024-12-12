@@ -26,4 +26,4 @@ COPY server/ .
 
 EXPOSE 5000
 
-ENTRYPOINT [ "uvicorn", "server:api", "--host", "0.0.0.0" "--port" "5000" ]
+ENTRYPOINT [ "uvicorn", "server:api", "--host", "0.0.0.0", "--port", "5000" ]
