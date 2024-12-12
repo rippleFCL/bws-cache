@@ -114,7 +114,7 @@ def handle_auth(authorization: Annotated[str, Header()]):
 
 @api.get("/reset")
 @handle_api_errors
-def get(authorization: Annotated[str, Depends(handle_auth)]):
+def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     client = client_manager.get_client_by_token(authorization)
     client.reset_cache()
     return {"status": "success"}
@@ -122,14 +122,14 @@ def get(authorization: Annotated[str, Depends(handle_auth)]):
 
 @api.get("/id/{secret_id}")
 @handle_api_errors
-def get(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
+def get_id(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_id(secret_id).to_json()
 
 
 @api.get("/key/{secret_key}")
 @handle_api_errors
-def get(
+def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
     secret_key: str,
 ):
