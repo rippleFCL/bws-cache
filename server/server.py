@@ -151,7 +151,7 @@ def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     client = client_manager.get_client_by_token(authorization)
     stats = client.reset_cache()
     return ResetResponse(
-        "success",
+        status="success",
         before=stats,
         after=CacheStats(secret_cache_size=0, keymap_cache_size=0),
     )
