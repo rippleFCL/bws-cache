@@ -192,7 +192,6 @@ def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
     secret_key: str,
 ):
-    print(authorization)
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_key(secret_key).to_json()
 
