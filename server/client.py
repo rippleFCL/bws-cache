@@ -1,5 +1,6 @@
 import datetime
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -18,6 +19,10 @@ PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == 
 
 
 logger = logging.getLogger("bwscache.client")
+
+
+def generate_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 class InvalidTokenException(Exception):
@@ -113,7 +118,7 @@ class BWSClient:
     def auth(self, cache: bool = True):
         try:
             logger.debug("authenticating client")
-            auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
+            auth_cache_file = f"/tmp/token_{generate_hash(self.bws_token)}" if cache else ""
             # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
             # not fixed but restructured to call this less
             self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
@@ -329,16 +334,19 @@ class ClientList:
         self._clients_lock = Lock()
 
     def add_client(self, token: str, client: CachedBWSClient):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            self._clients[token] = client
+            self._clients[hashed_token] = client
 
     def remove_client(self, token: str):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            self._clients.pop(token)
+            self._clients.pop(hashed_token, None)
 
     def get(self, token: str):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            return self._clients.get(token, None)
+            return self._clients.get(hashed_token, None)
 
     def list_clients(self):
         with self._clients_lock:
@@ -359,7 +367,7 @@ class CachedClientRefresher:
             clients = self.clients.list_clients()
             if clients:
                 logger.debug("refreshing %s clients ", len(clients))
-            for client_id, (token, client) in enumerate(clients):
+            for client_id, (hashed_token, client) in enumerate(clients):
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
@@ -367,7 +375,7 @@ class CachedClientRefresher:
                     logger.info(
                         "token expired for client",
                     )
-                    self.clients.remove_client(token)
+                    self.clients.remove_client(hashed_token)
                 time.sleep(self.refresh_interval)
 
 
