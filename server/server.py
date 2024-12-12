@@ -138,7 +138,7 @@ def get_key(
     return client.get_secret_by_key(secret_key).to_json()
 
 
-@api.route("/metrics")
+@api.get("/metrics")
 def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
     generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
