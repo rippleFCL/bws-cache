@@ -286,11 +286,12 @@ class CachedBWSClient:
         return cached_secret
 
     def _load_secret_keys(self):
-        logger.debug("loading secret key map")
-        secret_keys = self.client.list_secrets()
+        logger.debug("generating secret key map")
+        secrets = self.client.list_secrets()
         with self.cache_lock:
-            for secret in secret_keys:
+            for secret in secrets:
                 self.key_map[secret.key] = secret.id
+            logger.debug(f"generated secret key map with {len(self.key_map)} keys")
 
     def get_secret_by_key(self, secret_key: str):
         if not self.key_map:
