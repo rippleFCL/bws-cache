@@ -6,8 +6,8 @@ ENV ORG_ID=
 
 WORKDIR /app
 
-COPY ./pyproject.toml /work
-COPY ./poetry.lock /work
+COPY ./pyproject.toml /app
+COPY ./poetry.lock /app
 
 RUN pip install --no-cache-dir poetry && \
     poetry export --without-hashes -f requirements.txt --output requirements.txt && \
