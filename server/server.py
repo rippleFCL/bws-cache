@@ -98,7 +98,7 @@ def custom_openapi():
         return api.openapi_schema
     openapi_schema = get_openapi(
         title="bws-cache",
-        version="1.0.0",
+        version="1.1.0",
         summary="bws-cache OpenAPI Schema",
         description='<a href="https://github.com/rippleFCL/bws-cache">Github</a> | <a href="https://github.com/rippleFCL/bws-cache/issues">Issues</a>',
         routes=api.routes,
