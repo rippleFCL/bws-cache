@@ -12,9 +12,15 @@ from client import (
     UnauthorizedTokenException,
     UnknownKeyException,
 )
-from models import ResetResponse, SecretResponse
-from fastapi import Depends, FastAPI, HTTPException, Header, Response, Request
-
+from models import (
+    ErrorResponse,
+    MetricsResponse,
+    ResetStats,
+    ResetResponse,
+    SecretResponse,
+)
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi.responses import PlainTextResponse
 from prom_client import PromMetricsClient
 
 
@@ -112,22 +118,58 @@ def handle_auth(authorization: Annotated[str, Header()]):
     raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@api.get("/reset", response_model=ResetResponse)
+@api.get(
+    "/reset",
+    response_model=ResetResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or unauthorised token"},
+        429: {
+            "model": ErrorResponse,
+            "description": "BWS authentication endpoint rate limited",
+        },
+    },
+)
 @handle_api_errors
 def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     client = client_manager.get_client_by_token(authorization)
-    secret_cache_len, key_map_len = client.reset_cache()
-    return {"status": "success", "secret_cache_size": secret_cache_len, "key_map_cache_size": key_map_len}
+    stats = client.reset_cache()
+    return ResetResponse(
+        "success",
+        before=stats,
+        after=ResetStats(secret_cache_size=0, keymap_cache_size=0),
+    )
 
 
-@api.get("/id/{secret_id}", response_model=SecretResponse)
+@api.get(
+    "/id/{secret_id}",
+    response_model=SecretResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or unauthorised token"},
+        404: {"model": ErrorResponse, "description": "Secret not found"},
+        429: {
+            "model": ErrorResponse,
+            "description": "BWS authentication endpoint rate limited",
+        },
+    },
+)
 @handle_api_errors
 def get_id(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_id(secret_id).to_json()
 
 
-@api.get("/key/{secret_key}", response_model=SecretResponse)
+@api.get(
+    "/key/{secret_key}",
+    response_model=SecretResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or unauthorised token"},
+        404: {"model": ErrorResponse, "description": "Key not found"},
+        429: {
+            "model": ErrorResponse,
+            "description": "BWS authentication endpoint rate limited",
+        },
+    },
+)
 @handle_api_errors
 def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
@@ -138,8 +180,12 @@ def get_key(
     return client.get_secret_by_key(secret_key).to_json()
 
 
-@api.get("/metrics")
+@api.get("/metrics", response_model=MetricsResponse, responses={
+    200: {"model": MetricsResponse, "description": "Successful response with metrics data"},
+    400: {"model": ErrorResponse, "description": "Bad request"},
+    500: {"model": ErrorResponse, "description": "Internal server error"},
+})
 def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
     generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
-    return Response(generated_data, headers=headers)
+    return PlainTextResponse(generated_data, headers=headers)
