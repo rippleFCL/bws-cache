@@ -118,7 +118,9 @@ class BWSClient:
     def auth(self, cache: bool = True):
         try:
             logger.debug("authenticating client")
-            auth_cache_file = f"/tmp/token_{generate_hash(self.bws_token)}" if cache else ""
+            auth_cache_file = (
+                f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
+            )
             # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
             # not fixed but restructured to call this less
             self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
