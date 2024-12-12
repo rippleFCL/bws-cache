@@ -18,7 +18,7 @@ from fastapi.responses import PlainTextResponse
 from models import (
     ErrorResponse,
     ResetResponse,
-    ResetStats,
+    CacheStats,
     SecretResponse,
 )
 from prom_client import PromMetricsClient
@@ -152,7 +152,7 @@ def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     return ResetResponse(
         "success",
         before=stats,
-        after=ResetStats(secret_cache_size=0, keymap_cache_size=0),
+        after=CacheStats(secret_cache_size=0, keymap_cache_size=0),
     )
 
 
