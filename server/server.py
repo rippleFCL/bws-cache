@@ -13,6 +13,7 @@ from client import (
     UnknownKeyException,
 )
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
 from models import (
     ErrorResponse,
@@ -90,6 +91,23 @@ async def prom_middleware(request: Request, call_next):
         prom_client.tick_http_request_total(endpoint, str(return_data.status_code))
         prom_client.tick_http_request_duration(endpoint, time.time() - st)
     return return_data
+
+
+def custom_openapi():
+    if api.openapi_schema:
+        return api.openapi_schema
+    openapi_schema = get_openapi(
+        title="bws-cache",
+        version="1.0.0",
+        summary="bws-cache OpenAPI Schema",
+        description='<a href="https://github.com/rippleFCL/bws-cache">Github</a> | <a href="https://github.com/rippleFCL/bws-cache/issues">Issues</a>',
+        routes=api.routes,
+    )
+    api.openapi_schema = openapi_schema
+    return api.openapi_schema
+
+
+api.openapi = custom_openapi
 
 
 def handle_api_errors(func):
