@@ -1,12 +1,12 @@
+from email.policy import HTTP
 import functools
 import logging
 import os
 import time
 from datetime import datetime
 from json import JSONEncoder
-from typing import Any
+from typing import Any, Annotated
 
-from bitwarden_sdk.schemas import SecretResponse
 from client import (
     BWSAPIRateLimitExceededException,
     MissingSecretException,
@@ -14,12 +14,12 @@ from client import (
     InvalidTokenException,
     UnauthorizedTokenException,
     UnknownKeyException,
-    UnsetOrgIdException,
 )
-from flask import Flask, request
-from flask.json.provider import _default as _json_default
-from flask_restful import Api, Resource
+
+from fastapi import Depends, FastAPI, HTTPException, Header, Response, Request
+
 from prom_client import PromMetricsClient
+
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -51,22 +51,7 @@ ch.setFormatter(formatter)
 root_logger.addHandler(ch)
 
 
-class BWJSONEncoder(JSONEncoder):
-    def default(self, o: Any) -> Any:
-        if isinstance(o, SecretResponse):
-            return {
-                "".join(x.capitalize() if index != 0 else x for index, x in enumerate(key.lower().split("_"))): value
-                for key, value in o.__dict__.items()
-            }
-        if isinstance(o, datetime):
-            return o.isoformat()
-        return _json_default(o)
-
-
-app = Flask(__name__)
-api = Api(app)
-
-app.config["RESTFUL_JSON"] = {"cls": BWJSONEncoder}
+api = FastAPI()
 
 
 refresh_keymap_on_miss = os.environ.get("REFRESH_KEYMAP_ON_MISS", "").lower() == "true"
@@ -85,85 +70,73 @@ else:
 prom_client = PromMetricsClient()
 client_manager = BwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
 
+@api.middleware("http")
+async def prom_middleware(request: Request, call_next):
+    api_mapping = [
+        "/reset",
+        "/id",
+        "/key",
+    ]
+    endpoint = None
+    for api_endpoint in api_mapping:
+        if request.url.path.startswith(api_endpoint):
+            api_endpoint = api_endpoint
+    st = time.time()
+    return_data: Response = await call_next(request)
+    if endpoint and isinstance(return_data, Response):
+        prom_client.tick_http_request_total(endpoint, str(return_data.status_code))
+        prom_client.tick_http_request_duration(endpoint, time.time() - st)
+    return return_data
+
 
 def handle_api_errors(func):
     @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            try:
-                return func(self, auth_header.split()[-1], *args, **kwargs)
-            except InvalidTokenException:
-                return {"error": "Invalid token"}, 400
-            except UnauthorizedTokenException:
-                return {"error": "Unauthorized token"}, 401
-            except BWSAPIRateLimitExceededException:
-                return {"error": "Rate limited"}, 429
-            except UnsetOrgIdException:
-                return {"error": "unset org id"}, 400
-            except UnknownKeyException:
-                return {"error": "unknown key"}, 404
-            except MissingSecretException:
-                return {"error": "secret not found"}, 404
-
-        return {"error": "invalid auth header"}, 400
-
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except InvalidTokenException:
+            return Response("Invalid token", status_code=401)
+        except UnauthorizedTokenException:
+            return Response("Unauthorized token", status_code=401)
+        except BWSAPIRateLimitExceededException:
+            return Response("Rate limited", status_code=429)
+        except UnknownKeyException:
+            return Response("Unknown key", status_code=404)
+        except MissingSecretException:
+            return Response("Secret not found", status_code=404)
     return wrapper
 
+def handle_auth(authorization: Annotated[str, Header()]):
+    if authorization.startswith("Bearer "):
+        return authorization.split()[-1]
+    raise HTTPException(status_code=401, detail="Invalid token")
 
-def prom_stats(endpoint):
-    def wrapper(func):
-        @functools.wraps(func)
-        def inner(self, *args, **kwargs):
-            st = time.time()
-            return_data, return_code, *vals = func(self, *args, **kwargs)
-            prom_client.tick_http_request_total(endpoint, return_code)
-            prom_client.tick_http_request_duration(endpoint, time.time() - st)
-            return return_data, return_code, *vals
+@api.get("/reset")
+@handle_api_errors
+def get(authorization: Annotated[str, Depends(handle_auth)]):
+    client = client_manager.get_client_by_token(authorization)
+    client.reset_cache()
+    return {"status": "success"}
 
-        return inner
+@api.get("/id/{secret_id}")
+@handle_api_errors
+def get(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
+    client = client_manager.get_client_by_token(authorization)
+    return client.get_secret_by_id(secret_id)
 
-    return wrapper
-
-
-class BwsReset(Resource):
-    @prom_stats("/reset")
-    @handle_api_errors
-    def get(self, auth_token):
-        client = client_manager.get_client_by_token(auth_token)
-        client.reset_cache()
-        return {"status": "success"}, 200
-
-
-class BwsCacheId(Resource):
-    @prom_stats("/id")
-    @handle_api_errors
-    def get(self, auth_token, secret_id):
-        client = client_manager.get_client_by_token(auth_token)
-        return client.get_secret_by_id(secret_id), 200
+@api.get("/key/{key_id}")
+@handle_api_errors
+def get(
+    authorization: Annotated[str, Depends(handle_auth)],
+    key_id: str,
+):
+    print(authorization)
+    client = client_manager.get_client_by_token(authorization)
+    return client.get_secret_by_key(key_id).to_json()
 
 
-class BwsCacheKey(Resource):
-    @prom_stats("/key")
-    @handle_api_errors
-    def get(
-        self,
-        auth_token,
-        secret_id,
-    ):
-        client = client_manager.get_client_by_token(auth_token)
-        return client.get_secret_by_key(secret_id).to_json(), 200
-
-
-api.add_resource(BwsReset, "/reset")
-api.add_resource(BwsCacheId, "/id/<string:secret_id>")
-api.add_resource(BwsCacheKey, "/key/<string:secret_id>")
-
-
-@app.route("/metrics")
-def prometheus_metrics():
-    accept_header = request.headers.get("Accept")
-
-    generated_data, content_type = prom_client.generate_metrics(accept_header)
+@api.route("/metrics")
+def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
+    generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
-    return generated_data, 200, headers
+    return Response(generated_data, headers=headers)

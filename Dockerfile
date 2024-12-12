@@ -6,7 +6,12 @@ ENV ORG_ID=
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY ./pyproject.toml /work
+COPY ./poetry.lock /work
+
+RUN pip install --no-cache-dir poetry && \
+    poetry export --without-hashes -f requirements.txt --output requirements.txt && \
+
 
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -14,4 +19,4 @@ COPY server/ .
 
 EXPOSE 5000
 
-ENTRYPOINT [ "python", "-m", "flask", "--app", "server:app", "run", "--host", "0.0.0.0" ]
+ENTRYPOINT [ "uvicorn", "server:api", "--host", "0.0.0.0" "--port" "5000" ]

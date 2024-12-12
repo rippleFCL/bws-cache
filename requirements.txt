@@ -1,5 +1,0 @@
-Flask==3.1.0
-Flask-RESTful==0.3.10
-prometheus-client==0.21.1
-bitwarden-sdk==1.0.0
-pyyaml==6.0.2

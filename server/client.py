@@ -22,10 +22,6 @@ class InvalidTokenException(Exception):
     pass
 
 
-class UnsetOrgIdException(Exception):
-    pass
-
-
 class UnauthorizedTokenException(Exception):
     pass
 
