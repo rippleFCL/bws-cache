@@ -24,3 +24,9 @@ class ResetResponse(SuccResonse):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class StatsResponse(BaseModel):
+    num_clients: int
+    client_stats: dict[str, CacheStats]
+    total_stats: CacheStats

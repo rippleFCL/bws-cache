@@ -12,7 +12,7 @@ from threading import Lock, Thread
 
 import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
-from models import CacheStats
+from models import CacheStats, StatsResponse
 from prom_client import PromMetricsClient
 
 PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
@@ -318,14 +318,18 @@ class CachedBWSClient:
 
     def reset_cache(self) -> CacheStats:
         logger.debug("resetting cache")
+        stats = self.stats()
         with self.cache_lock:
-            secret_cache_len = len(self.secret_cache)
-            key_map_len = len(self.key_map)
             self.secret_cache = {}
             self.key_map = {}
-        return CacheStats(
-            secret_cache_size=secret_cache_len, keymap_cache_size=key_map_len
-        )
+        return stats
+
+    def stats(self) -> CacheStats:
+        with self.cache_lock:
+            return CacheStats(
+                secret_cache_size=len(self.secret_cache),
+                keymap_cache_size=len(self.key_map),
+            )
 
 
 class ClientList:
@@ -422,3 +426,21 @@ class BwsClientManager:
             client.auth()
             self.client_list.add_client(bws_secret_token, client)
         return client
+
+    def stats(self) -> StatsResponse:
+        clients_stats: dict[str, CacheStats] = {}
+        for hashed_token, client in self.client_list.list_clients():
+            clients_stats[hashed_token] = client.stats()
+
+        secret_cache_size_sum = 0
+        keymap_cache_size_sum = 0
+        for client_stats in clients_stats.values():
+            secret_cache_size_sum += client_stats.secret_cache_size
+            keymap_cache_size_sum += client_stats.keymap_cache_size
+
+        total_stats = CacheStats(
+            secret_cache_size=secret_cache_size_sum,
+            keymap_cache_size=keymap_cache_size_sum,
+        )
+
+        return StatsResponse(num_clients=len(clients_stats), client_stats=clients_stats, total_stats=total_stats)

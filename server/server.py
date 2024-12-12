@@ -20,6 +20,7 @@ from models import (
     ResetResponse,
     CacheStats,
     SecretResponse,
+    StatsResponse,
 )
 from prom_client import PromMetricsClient
 
@@ -216,3 +217,19 @@ def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
     generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
     return PlainTextResponse(generated_data, headers=headers)
+
+
+@api.get(
+    "/stats",
+    response_model=StatsResponse,
+    responses={
+        200: {
+            "model": StatsResponse,
+            "description": "Successful response with stats data",
+        },
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+@handle_api_errors
+def get_stats():
+    return client_manager.stats()
