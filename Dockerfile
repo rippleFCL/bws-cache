@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm as requirement-builder
+FROM python:3.12-slim-bookworm AS requirement-builder
 
 WORKDIR /app
 
@@ -12,9 +12,10 @@ RUN poetry export --without-hashes -f requirements.txt --output requirements.txt
 
 FROM python:3.12-slim-bookworm
 
-ENV PYTHONUNBUFFERED=1
-
-ENV ORG_ID=
+ENV PYTHONUNBUFFERED=1 \
+    ORG_ID= \
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=5000
 
 WORKDIR /app
 
@@ -26,4 +27,4 @@ COPY server/ .
 
 EXPOSE 5000
 
-ENTRYPOINT [ "uvicorn", "server:api", "--host", "0.0.0.0", "--port", "5000" ]
+ENTRYPOINT [ "uvicorn", "server:api" ]
