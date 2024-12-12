@@ -15,6 +15,7 @@ This allows lookup by either ID or key, as shown below.
 * `/key/<string:secret_key>` - Secret key lookup
 * `/reset` - Clear secret and keymap cache
 * `/metrics` - Prometheus metrics
+* `/stats` - bws-cache statistics
 
 ## Authentication
 
