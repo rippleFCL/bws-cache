@@ -203,7 +203,13 @@ def get_key(
         200: {
             "description": "Successful response with metrics data",
         },
-        500: {"model": ErrorResponse, "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}}, "description": "Internal server error"},
+        500: {
+            "model": ErrorResponse,
+            "content": {
+                "application/json": {"schema": ErrorResponse.model_json_schema()}
+            },
+            "description": "Internal server error",
+        },
     },
 )
 def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
