@@ -309,12 +309,14 @@ class CachedBWSClient:
                 self.secret_cache[secret.id] = secret
                 self.key_map[secret.key] = secret.id
 
-    def reset_cache(self):
+    def reset_cache(self) -> tuple[int, int]:
         logger.debug("resetting cache")
         with self.cache_lock:
+            secret_cache_len = len(self.secret_cache)
+            key_map_len = len(self.key_map)
             self.secret_cache = {}
             self.key_map = {}
-
+        return secret_cache_len, key_map_len
 
 class ClientList:
     def __init__(self):

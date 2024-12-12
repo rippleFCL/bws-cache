@@ -12,7 +12,7 @@ from client import (
     UnauthorizedTokenException,
     UnknownKeyException,
 )
-
+from models import ResetResponse, SecretResponse,
 from fastapi import Depends, FastAPI, HTTPException, Header, Response, Request
 
 from prom_client import PromMetricsClient
@@ -112,22 +112,22 @@ def handle_auth(authorization: Annotated[str, Header()]):
     raise HTTPException(status_code=401, detail="Invalid token")
 
 
-@api.get("/reset")
+@api.get("/reset", response_model=ResetResponse)
 @handle_api_errors
 def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     client = client_manager.get_client_by_token(authorization)
-    client.reset_cache()
-    return {"status": "success"}
+    secret_cache_len, key_map_len = client.reset_cache()
+    return {"status": "success", "secret_cache_size": secret_cache_len, "key_map_cache_size": key_map_len}
 
 
-@api.get("/id/{secret_id}")
+@api.get("/id/{secret_id}", response_model=SecretResponse)
 @handle_api_errors
 def get_id(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_id(secret_id).to_json()
 
 
-@api.get("/key/{secret_key}")
+@api.get("/key/{secret_key}", response_model=SecretResponse)
 @handle_api_errors
 def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
