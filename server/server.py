@@ -17,7 +17,6 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
 from models import (
     ErrorResponse,
-    MetricsResponse,
     ResetResponse,
     ResetStats,
     SecretResponse,
@@ -199,14 +198,12 @@ def get_key(
 
 @api.get(
     "/metrics",
-    response_model=MetricsResponse,
+    response_class=PlainTextResponse,
     responses={
         200: {
-            "model": MetricsResponse,
             "description": "Successful response with metrics data",
         },
-        400: {"model": ErrorResponse, "description": "Bad request"},
-        500: {"model": ErrorResponse, "description": "Internal server error"},
+        500: {"model": ErrorResponse, "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}}, "description": "Internal server error"},
     },
 )
 def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
