@@ -446,4 +446,8 @@ class BwsClientManager:
             keymap_cache_size=keymap_cache_size_sum,
         )
 
-        return StatsResponse(num_clients=len(clients_stats), client_stats=clients_stats, total_stats=total_stats)
+        return StatsResponse(
+            num_clients=len(clients_stats),
+            client_stats=clients_stats,
+            total_stats=total_stats,
+        )
