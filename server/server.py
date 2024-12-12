@@ -12,7 +12,7 @@ from client import (
     UnauthorizedTokenException,
     UnknownKeyException,
 )
-from models import ResetResponse, SecretResponse,
+from models import ResetResponse, SecretResponse
 from fastapi import Depends, FastAPI, HTTPException, Header, Response, Request
 
 from prom_client import PromMetricsClient
