@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "bws-cache"
+version = "0.1.0"
+description = ""
+authors = ["ripple <github@ripple.contact>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.6"
+prometheus-client = "^0.21.1"
+bitwarden-sdk = "^1.0.0"
+pyyaml = "^6.0.2"
+uvicorn = "^0.32.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
