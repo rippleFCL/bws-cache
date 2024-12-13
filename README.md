@@ -10,9 +10,11 @@ This allows lookup by either ID or key, as shown below.
 
 ## Endpoints
 
-* `/id/<string:secret_id>`
-* `/key/<string:secret_key>`
-* `/reset`
+* `/docs` - OpenAPI docs
+* `/id/<string:secret_id>` - Secret ID lookup
+* `/key/<string:secret_key>` - Secret key lookup
+* `/reset` - Clear secret and keymap cache
+* `/metrics` - Prometheus metrics
 
 ## Authentication
 
@@ -92,7 +94,7 @@ Since the secret and keymap caches are isolated to each client, `token_A`'s clie
 
 ### Resetting Cache
 
-You can use the `/reset` endpoint if you wish to manually empty the client's secret cache.
+You can use the `/reset` endpoint if you wish to manually empty the client's secret and keymap cache.
 
 ### Secret Lookups
 

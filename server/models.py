@@ -1,17 +1,26 @@
-from dataclasses import dataclass
+from pydantic import BaseModel
 from typing import Literal
 
-@dataclass
-class SecretResponse:
+
+class SecretResponse(BaseModel):
     id: str
     key: str
     value: str
 
-@dataclass
-class SuccResonse:
+
+class SuccResonse(BaseModel):
     status: Literal["success"]
 
-@dataclass
-class ResetResponse(SuccResonse):
-    key_map_cache_size: int
+
+class ResetStats(BaseModel):
+    keymap_cache_size: int
     secret_cache_size: int
+
+
+class ResetResponse(SuccResonse):
+    before: ResetStats
+    after: ResetStats
+
+
+class ErrorResponse(BaseModel):
+    detail: str
