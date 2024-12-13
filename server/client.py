@@ -1,5 +1,6 @@
 import datetime
 import functools
+import hashlib
 import json
 import logging
 import os
@@ -11,13 +12,17 @@ from threading import Lock, Thread
 
 import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
-from models import ResetStats
+from models import CacheStats, StatsResponse
 from prom_client import PromMetricsClient
 
 PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
 
 
 logger = logging.getLogger("bwscache.client")
+
+
+def generate_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 class InvalidTokenException(Exception):
@@ -113,7 +118,9 @@ class BWSClient:
     def auth(self, cache: bool = True):
         try:
             logger.debug("authenticating client")
-            auth_cache_file = f"/tmp/token_{hash(self.bws_token)}" if cache else ""
+            auth_cache_file = (
+                f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
+            )
             # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
             # not fixed but restructured to call this less
             self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
@@ -279,11 +286,12 @@ class CachedBWSClient:
         return cached_secret
 
     def _load_secret_keys(self):
-        logger.debug("loading secret key map")
-        secret_keys = self.client.list_secrets()
+        logger.debug("generating secret key map")
+        secrets = self.client.list_secrets()
         with self.cache_lock:
-            for secret in secret_keys:
+            for secret in secrets:
                 self.key_map[secret.key] = secret.id
+            logger.debug(f"generated secret key map with {len(self.key_map)} keys")
 
     def get_secret_by_key(self, secret_key: str):
         if not self.key_map:
@@ -311,14 +319,20 @@ class CachedBWSClient:
                 self.secret_cache[secret.id] = secret
                 self.key_map[secret.key] = secret.id
 
-    def reset_cache(self) -> ResetStats:
+    def reset_cache(self) -> CacheStats:
         logger.debug("resetting cache")
+        stats = self.stats()
         with self.cache_lock:
-            secret_cache_len = len(self.secret_cache)
-            key_map_len = len(self.key_map)
             self.secret_cache = {}
             self.key_map = {}
-        return ResetStats(secret_cache_len, key_map_len)
+        return stats
+
+    def stats(self) -> CacheStats:
+        with self.cache_lock:
+            return CacheStats(
+                secret_cache_size=len(self.secret_cache),
+                keymap_cache_size=len(self.key_map),
+            )
 
 
 class ClientList:
@@ -327,16 +341,19 @@ class ClientList:
         self._clients_lock = Lock()
 
     def add_client(self, token: str, client: CachedBWSClient):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            self._clients[token] = client
+            self._clients[hashed_token] = client
 
     def remove_client(self, token: str):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            self._clients.pop(token)
+            self._clients.pop(hashed_token, None)
 
     def get(self, token: str):
+        hashed_token = generate_hash(token)
         with self._clients_lock:
-            return self._clients.get(token, None)
+            return self._clients.get(hashed_token, None)
 
     def list_clients(self):
         with self._clients_lock:
@@ -357,7 +374,7 @@ class CachedClientRefresher:
             clients = self.clients.list_clients()
             if clients:
                 logger.debug("refreshing %s clients ", len(clients))
-            for client_id, (token, client) in enumerate(clients):
+            for client_id, (hashed_token, client) in enumerate(clients):
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
@@ -365,7 +382,7 @@ class CachedClientRefresher:
                     logger.info(
                         "token expired for client",
                     )
-                    self.clients.remove_client(token)
+                    self.clients.remove_client(hashed_token)
                 time.sleep(self.refresh_interval)
 
 
@@ -412,3 +429,25 @@ class BwsClientManager:
             client.auth()
             self.client_list.add_client(bws_secret_token, client)
         return client
+
+    def stats(self) -> StatsResponse:
+        clients_stats: dict[str, CacheStats] = {}
+        for hashed_token, client in self.client_list.list_clients():
+            clients_stats[hashed_token] = client.stats()
+
+        secret_cache_size_sum = 0
+        keymap_cache_size_sum = 0
+        for client_stats in clients_stats.values():
+            secret_cache_size_sum += client_stats.secret_cache_size
+            keymap_cache_size_sum += client_stats.keymap_cache_size
+
+        total_stats = CacheStats(
+            secret_cache_size=secret_cache_size_sum,
+            keymap_cache_size=keymap_cache_size_sum,
+        )
+
+        return StatsResponse(
+            num_clients=len(clients_stats),
+            client_stats=clients_stats,
+            total_stats=total_stats,
+        )

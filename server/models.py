@@ -12,15 +12,21 @@ class SuccResonse(BaseModel):
     status: Literal["success"]
 
 
-class ResetStats(BaseModel):
+class CacheStats(BaseModel):
     keymap_cache_size: int
     secret_cache_size: int
 
 
 class ResetResponse(SuccResonse):
-    before: ResetStats
-    after: ResetStats
+    before: CacheStats
+    after: CacheStats
 
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class StatsResponse(BaseModel):
+    num_clients: int
+    client_stats: dict[str, CacheStats]
+    total_stats: CacheStats

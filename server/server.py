@@ -18,8 +18,9 @@ from fastapi.responses import PlainTextResponse
 from models import (
     ErrorResponse,
     ResetResponse,
-    ResetStats,
+    CacheStats,
     SecretResponse,
+    StatsResponse,
 )
 from prom_client import PromMetricsClient
 
@@ -97,7 +98,7 @@ def custom_openapi():
         return api.openapi_schema
     openapi_schema = get_openapi(
         title="bws-cache",
-        version="1.0.0",
+        version="1.1.0",
         summary="bws-cache OpenAPI Schema",
         description='<a href="https://github.com/rippleFCL/bws-cache">Github</a> | <a href="https://github.com/rippleFCL/bws-cache/issues">Issues</a>',
         routes=api.routes,
@@ -150,9 +151,9 @@ def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     client = client_manager.get_client_by_token(authorization)
     stats = client.reset_cache()
     return ResetResponse(
-        "success",
+        status="success",
         before=stats,
-        after=ResetStats(secret_cache_size=0, keymap_cache_size=0),
+        after=CacheStats(secret_cache_size=0, keymap_cache_size=0),
     )
 
 
@@ -191,7 +192,6 @@ def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
     secret_key: str,
 ):
-    print(authorization)
     client = client_manager.get_client_by_token(authorization)
     return client.get_secret_by_key(secret_key).to_json()
 
@@ -216,3 +216,19 @@ def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
     generated_data, content_type = prom_client.generate_metrics(accept)
     headers = {"Content-Type": content_type}
     return PlainTextResponse(generated_data, headers=headers)
+
+
+@api.get(
+    "/stats",
+    response_model=StatsResponse,
+    responses={
+        200: {
+            "model": StatsResponse,
+            "description": "Successful response with stats data",
+        },
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+@handle_api_errors
+def get_stats():
+    return client_manager.stats()
