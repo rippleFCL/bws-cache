@@ -2,11 +2,10 @@ FROM python:3.12-slim-bookworm AS requirement-builder
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir poetry
+RUN pip install --no-cache-dir poetry poetry-plugin-export
 
 COPY ./pyproject.toml /app
 COPY ./poetry.lock /app
-
 
 RUN poetry export --without-hashes -f requirements.txt --output requirements.txt
 
