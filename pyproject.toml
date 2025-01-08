@@ -13,7 +13,7 @@ fastapi = "^0.115.6"
 prometheus-client = "^0.21.1"
 bitwarden-sdk = "^1.0.0"
 pyyaml = "^6.0.2"
-uvicorn = "^0.32.1"
+uvicorn = "^0.34.0"
 
 
 [tool.poetry.group.dev.dependencies]
