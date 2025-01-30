@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Literal
+from typing import Any, Literal
 
 
 class SecretResponse(BaseModel):
     id: str
     key: str
-    value: str
+    value: str | Any
 
 
 class SuccResonse(BaseModel):
