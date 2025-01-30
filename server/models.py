@@ -5,7 +5,7 @@ from typing import Any, Literal
 class SecretResponse(BaseModel):
     id: str
     key: str
-    value: str | Any
+    value: str | dict | list
 
 
 class SuccResonse(BaseModel):
