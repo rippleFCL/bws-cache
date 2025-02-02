@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from queue import Queue
 from threading import Lock, Thread
+import requests
 
 import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
@@ -120,17 +121,19 @@ class BWSClient:
                 }
             )
         )
-
-
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
+        def wrapper(self: "BWSClient", *args, **kwargs):
             try:
+                requests.get("https://bitwarden.com", timeout=5)
                 return func(self, *args, **kwargs)
+            except requests.exceptions.RequestException as e:
+                logger.debug("cannot connect to bitwarden.com")
+                raise CantSendRequestException() from e
             except Exception as e:
+                print(type(e))
                 logger.error("request failed with %s", e.args[0])
-
                 if "401 Unauthorized" in e.args[0]:
                     raise UnauthorizedTokenException("Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
@@ -394,10 +397,10 @@ class CachedClientRefresher:
                     logger.info("rate limit exceeded for client %s", client_id)
                     time.sleep(30)
                 except InvalidTokenException:
-                    logger.info("invalid token for client %s", client_id)
+                    logger.error("invalid token for client %s", client_id)
                     self.clients.remove_client(client_id)
                 except CantSendRequestException:
-                    logger.error("cant sent request to upstream for client for client %s", client_id)
+                    logger.info("cant sent request to upstream for client for client %s skipping...", client_id)
                 except Exception as e:
                     logger.error("error occored while refreshing client")
                     logger.debug(e, exc_info=True)
