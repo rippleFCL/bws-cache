@@ -47,6 +47,9 @@ class UnknownKeyException(Exception):
 class CantSendRequestException(Exception):
     pass
 
+class InvalidSecretIDException(Exception):
+    pass
+
 @dataclass
 class SecretMetaData:
     key: str
@@ -138,6 +141,8 @@ class BWSClient:
                     raise InvalidTokenException("Invalid token") from e
                 elif "error sending request for url" in e.args[0]:
                     raise CantSendRequestException() from e
+                elif "Invalid command value: UUID parsing failed" in e.args[0]:
+                    raise InvalidSecretIDException()
                 raise e
 
         return wrapper
