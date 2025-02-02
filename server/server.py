@@ -48,8 +48,14 @@ if not ORG_ID:
 
 root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
+if root_logger.level == logging.DEBUG:
+    formatter = logging.Formatter(
+        "[%(asctime)s] {%(pathname)s:%(lineno)d} %(name)s:%(levelname)s - %(message)s", "%m-%d %H:%M:%S"
+    )
+else:
+    formatter = logging.Formatter("%(asctime)s - %(name)s:%(levelname)s - %(message)s")
+
 ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
 root_logger.addHandler(ch)
 
@@ -205,9 +211,7 @@ def get_key(
         },
         500: {
             "model": ErrorResponse,
-            "content": {
-                "application/json": {"schema": ErrorResponse.model_json_schema()}
-            },
+            "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}},
             "description": "Internal server error",
         },
     },
