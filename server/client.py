@@ -405,7 +405,7 @@ class CachedClientRefresher:
                     logger.error("error occored while refreshing client")
                     logger.debug(e, exc_info=True)
                     self.clients.remove_client(client_id)
-                time.sleep(self.refresh_interval)
+            time.sleep(self.refresh_interval)
 
 
 class BwsClientManager:
