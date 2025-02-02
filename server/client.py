@@ -344,11 +344,13 @@ class ClientList:
         hashed_token = generate_hash(token)
         with self._clients_lock:
             self._clients[hashed_token] = client
+        logger.debug("adding client %s. total clients: %s", hashed_token, len(self._clients))
 
-    def remove_client(self, token: str):
-        hashed_token = generate_hash(token)
+
+    def remove_client(self, hashed_token: str):
         with self._clients_lock:
             self._clients.pop(hashed_token, None)
+        logger.debug("removed client %s. total clients: %s", hashed_token, len(self._clients))
 
     def get(self, token: str):
         hashed_token = generate_hash(token)
@@ -378,10 +380,17 @@ class CachedClientRefresher:
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
-                except Exception:
-                    logger.info(
-                        "token expired for client",
+                except BWSAPIRateLimitExceededException:
+                    logger.info("rate limit exceeded for client %s", client_id)
+                    time.sleep(30)
+                except InvalidTokenException:
+                    logger.info("invalid token for client %s", client_id)
+                    self.clients.remove_client(hashed_token)
+                except Exception as e:
+                    logger.error(
+                        "error occored while refreshing client"
                     )
+                    logger.debug(e, exc_info=True)
                     self.clients.remove_client(hashed_token)
                 time.sleep(self.refresh_interval)
 
