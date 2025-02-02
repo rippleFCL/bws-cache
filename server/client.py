@@ -126,7 +126,7 @@ class BWSClient:
         @functools.wraps(func)
         def wrapper(self: "BWSClient", *args, **kwargs):
             try:
-                requests.get("https://bitwarden.com", timeout=5)
+                requests.head("https://bitwarden.com", timeout=5)
                 return func(self, *args, **kwargs)
             except requests.exceptions.RequestException as e:
                 logger.debug("cannot connect to bitwarden.com")
