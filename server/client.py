@@ -168,11 +168,12 @@ class BWSClient:
     @_handle_api_errors
     def get_updated_secrets(self):
         secrets: list[SecretResponse] = []
+        latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)-datetime.timedelta(days=1)
         logger.debug("getting updated secrets")
-        latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
         secret_response = (
             self.bws_client.secrets().sync(self.org_id, self.last_sync).data
         )
+        logger.debug("got updated secrets")
         self.last_sync = latest_sync
         if secret_response and secret_response.has_changes and secret_response.secrets:
             for secret in secret_response.secrets:
@@ -426,16 +427,16 @@ class BwsClientManager:
         return ClientList()
 
     def _make_client(self, bws_secret_token: str):
-        return CachedBWSClient(
-            bws_secret_token, self.org_id, self.requester, self.prom_client
-        )
+        client = CachedBWSClient(bws_secret_token, self.org_id, self.requester, self.prom_client)
+        client.auth()
+        return client
 
     def get_client_by_token(self, bws_secret_token) -> CachedBWSClient:
         client = self.client_list.get(bws_secret_token)
         if client is None:
             logger.debug("creating new client")
             client = self._make_client(bws_secret_token)
-            client.auth()
+
             self.client_list.add_client(bws_secret_token, client)
         return client
 
