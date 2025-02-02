@@ -44,6 +44,8 @@ class MissingSecretException(Exception):
 class UnknownKeyException(Exception):
     pass
 
+class CantSendRequestException(Exception):
+    pass
 
 @dataclass
 class SecretMetaData:
@@ -101,7 +103,8 @@ class BWSClient:
         self.org_id = org_id
         self.bws_token = bws_token
         self.bws_client = self._make_client()
-        self.last_sync = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.client_lock = Lock()
+        self.last_sync = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=60)
 
     def _make_client(self):
         return BitwardenClient(
@@ -115,27 +118,6 @@ class BWSClient:
             )
         )
 
-    def auth(self, cache: bool = True):
-        try:
-            logger.debug("authenticating client")
-            auth_cache_file = (
-                f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
-            )
-            # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
-            # not fixed but restructured to call this less
-            self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
-        except Exception as e:
-            logger.error("request failed with %s", e.args[0])
-            if (
-                "400 Bad Request" in e.args[0]
-                or "Access token is not in a valid format" in e.args[0]
-            ):
-                raise InvalidTokenException("Invalid token") from e
-
-            if "429 Too Many Requests" in e.args[0]:
-                raise BWSAPIRateLimitExceededException("Auth rate limit") from e
-
-            raise e
 
     @staticmethod
     def _handle_api_errors(func):
@@ -152,14 +134,35 @@ class BWSClient:
                     raise BWSAPIRateLimitExceededException("too many requests") from e
                 elif "404 Not Found" in e.args[0]:
                     raise MissingSecretException() from e
+                elif "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
+                    raise InvalidTokenException("Invalid token") from e
+                elif "error sending request for url" in e.args[0]:
+                    raise CantSendRequestException() from e
                 raise e
 
         return wrapper
 
     @_handle_api_errors
+    def auth(self, cache: bool = True):
+        try:
+            logger.debug("authenticating client")
+            auth_cache_file = f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
+            # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
+            # not fixed but restructured to call this less
+            with self.client_lock:
+                self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
+        except Exception as e:
+            logger.error("request failed with %s", e.args[0])
+
+            raise e
+
+
+    @_handle_api_errors
     def list_secrets(self):
         secrets: list[SecretMetaData] = []
-        secrets_metadata = self.bws_client.secrets().list(self.org_id).data
+        with self.client_lock:
+            logger.debug("getting secret list")
+            secrets_metadata = self.bws_client.secrets().list(self.org_id).data
         if secrets_metadata:
             for secret in secrets_metadata.data:
                 secrets.append(SecretMetaData(secret.key, str(secret.id)))
@@ -168,28 +171,25 @@ class BWSClient:
     @_handle_api_errors
     def get_updated_secrets(self):
         secrets: list[SecretResponse] = []
-        latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)-datetime.timedelta(days=1)
-        logger.debug("getting updated secrets")
-        secret_response = (
-            self.bws_client.secrets().sync(self.org_id, self.last_sync).data
-        )
+        latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
+        with self.client_lock:
+            logger.debug("getting updated secrets")
+            secret_response = self.bws_client.secrets().sync(self.org_id, self.last_sync).data
         logger.debug("got updated secrets")
         self.last_sync = latest_sync
         if secret_response and secret_response.has_changes and secret_response.secrets:
             for secret in secret_response.secrets:
                 logger.debug("got updated secret %s", secret.id)
-                secrets.append(
-                    SecretResponse(
-                        SecretMetaData(secret.key, str(secret.id)), secret.value
-                    )
-                )
+                secrets.append(SecretResponse(SecretMetaData(secret.key, str(secret.id)), secret.value))
         else:
             logger.debug("no secrets updated")
         return secrets
 
     @_handle_api_errors
     def get_secret_by_id(self, secret_uuid: str):
-        data = self.bws_client.secrets().get(secret_uuid).data
+        with self.client_lock:
+            logger.debug("getting secret %s", secret_uuid)
+            data = self.bws_client.secrets().get(secret_uuid).data
         if data:
             logger.debug("upstream has secret %s", secret_uuid)
             return SecretResponse(SecretMetaData(data.key, str(data.id)), data.value)
@@ -227,9 +227,7 @@ class ClientRequester:
             try:
                 self.response_queue.put(response, timeout=self.request_interval)
             except TimeoutError:
-                logger.critical(
-                    "client did not consume the response, request thread unrecoverable"
-                )
+                logger.critical("client did not consume the response, request thread unrecoverable")
                 self.crashed = True
                 return
             time.sleep(self.request_interval)
@@ -314,9 +312,7 @@ class CachedBWSClient:
             self.reset_cache()
         with self.cache_lock:
             for secret in secrets:
-                logger.debug(
-                    "adding cache for secret %s, key %s", secret.id, secret.key
-                )
+                logger.debug("adding cache for secret %s, key %s", secret.id, secret.key)
                 self.secret_cache[secret.id] = secret
                 self.key_map[secret.key] = secret.id
 
@@ -347,7 +343,6 @@ class ClientList:
             self._clients[hashed_token] = client
         logger.debug("adding client %s. total clients: %s", hashed_token, len(self._clients))
 
-
     def remove_client(self, hashed_token: str):
         with self._clients_lock:
             self._clients.pop(hashed_token, None)
@@ -377,7 +372,7 @@ class CachedClientRefresher:
             clients = self.clients.list_clients()
             if clients:
                 logger.debug("refreshing %s clients ", len(clients))
-            for client_id, (hashed_token, client) in enumerate(clients):
+            for client_id, client in clients:
                 logger.debug("refreshing client id: %s", client_id)
                 try:
                     client.refresh_cache()
@@ -386,13 +381,13 @@ class CachedClientRefresher:
                     time.sleep(30)
                 except InvalidTokenException:
                     logger.info("invalid token for client %s", client_id)
-                    self.clients.remove_client(hashed_token)
+                    self.clients.remove_client(client_id)
+                except CantSendRequestException:
+                    logger.error("cant sent request to upstream for client for client %s", client_id)
                 except Exception as e:
-                    logger.error(
-                        "error occored while refreshing client"
-                    )
+                    logger.error("error occored while refreshing client")
                     logger.debug(e, exc_info=True)
-                    self.clients.remove_client(hashed_token)
+                    self.clients.remove_client(client_id)
                 time.sleep(self.refresh_interval)
 
 
