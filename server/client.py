@@ -217,7 +217,7 @@ class ClientRequester:
         self.request_interval = request_interval
         self.request_lock = Lock()
         self.request_queue: Queue[RequestContext] = Queue(1)
-        self.response_queue: Queue[SecretResponse | None] = Queue(1)
+        self.response_queue: Queue[SecretResponse | None | Exception] = Queue(1)
         self.request_thread = Thread(target=self._request_loop, daemon=True)
         self.crashed = False
 
@@ -226,9 +226,15 @@ class ClientRequester:
 
     def _request_loop(self):
         while True:
-            request_context = self.request_queue.get()
-            logger.debug("requesting secret %s", request_context.id)
-            response = request_context.client.get_secret_by_id(request_context.id)
+            try:
+                request_context = self.request_queue.get()
+                logger.debug("requesting secret %s", request_context.id)
+
+                response = request_context.client.get_secret_by_id(request_context.id)
+            except Exception as e:
+                logger.error("request failed")
+                response = e
+
             try:
                 self.response_queue.put(response, timeout=self.request_interval)
             except TimeoutError:
@@ -245,7 +251,10 @@ class ClientRequester:
             logger.debug("submiting secret to be requested %s", secret_id)
             self.request_queue.put(RequestContext(client, secret_id))
             logger.debug("waiting for secret %s", secret_id)
-            return self.response_queue.get()
+            response = self.response_queue.get()
+            if isinstance(response, Exception):
+                raise response
+            return response
 
 
 class CachedBWSClient:
