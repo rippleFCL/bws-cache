@@ -15,13 +15,7 @@ from client import (
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
-from models import (
-    ErrorResponse,
-    ResetResponse,
-    CacheStats,
-    SecretResponse,
-    StatsResponse,
-)
+from models import ErrorResponse, ResetResponse, CacheStats, SecretResponse, StatsResponse, HealthcheckResponse
 from prom_client import PromMetricsClient
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -205,9 +199,7 @@ def get_key(
         },
         500: {
             "model": ErrorResponse,
-            "content": {
-                "application/json": {"schema": ErrorResponse.model_json_schema()}
-            },
+            "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}},
             "description": "Internal server error",
         },
     },
@@ -232,3 +224,8 @@ def prometheus_metrics(accept: Annotated[str | str, Header()] = ""):
 @handle_api_errors
 def get_stats():
     return client_manager.stats()
+
+
+@api.get("/healthcheck", response_model=HealthcheckResponse)
+def healthcheck():
+    return {"status": "im alive"}
