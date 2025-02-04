@@ -11,7 +11,7 @@ from client import (
     MissingSecretException,
     UnauthorizedTokenException,
     UnknownKeyException,
-    CantSendRequestException,
+    SendRequestException,
     InvalidSecretIDException
 )
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
@@ -131,8 +131,8 @@ def handle_api_errors(func):
             return Response("Rate limited", status_code=429)
         except UnknownKeyException:
             return Response("Unknown key", status_code=404)
-        except CantSendRequestException:
-            return Response("cant connect to bitwarden.com")
+        except SendRequestException:
+            return Response("Can't connect to bitwarden.com")
         except MissingSecretException:
             return Response("Secret not found", status_code=404)
         except InvalidSecretIDException:

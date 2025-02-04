@@ -45,11 +45,14 @@ class MissingSecretException(Exception):
 class UnknownKeyException(Exception):
     pass
 
-class CantSendRequestException(Exception):
+
+class SendRequestException(Exception):
     pass
+
 
 class InvalidSecretIDException(Exception):
     pass
+
 
 @dataclass
 class SecretMetaData:
@@ -121,6 +124,7 @@ class BWSClient:
                 }
             )
         )
+
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
@@ -130,7 +134,7 @@ class BWSClient:
                 return func(self, *args, **kwargs)
             except requests.exceptions.RequestException as e:
                 logger.debug("cannot connect to bitwarden.com")
-                raise CantSendRequestException() from e
+                raise SendRequestException() from e
             except Exception as e:
                 print(type(e))
                 logger.error("request failed with %s", e.args[0])
@@ -143,7 +147,7 @@ class BWSClient:
                 elif "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
                     raise InvalidTokenException("Invalid token") from e
                 elif "error sending request for url" in e.args[0]:
-                    raise CantSendRequestException() from e
+                    raise SendRequestException() from e
                 elif "Invalid command value: UUID parsing failed" in e.args[0]:
                     raise InvalidSecretIDException()
                 raise e
@@ -163,7 +167,6 @@ class BWSClient:
             logger.error("request failed with %s", e.args[0])
 
             raise e
-
 
     @_handle_api_errors
     def list_secrets(self):
@@ -399,7 +402,7 @@ class CachedClientRefresher:
                 except InvalidTokenException:
                     logger.error("invalid token for client %s", client_id)
                     self.clients.remove_client(client_id)
-                except CantSendRequestException:
+                except SendRequestException:
                     logger.info("cant sent request to upstream for client for client %s skipping...", client_id)
                 except Exception as e:
                     logger.error("error occored while refreshing client")
