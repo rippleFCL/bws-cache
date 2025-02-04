@@ -11,6 +11,8 @@ from client import (
     MissingSecretException,
     UnauthorizedTokenException,
     UnknownKeyException,
+    SendRequestException,
+    InvalidSecretIDException
 )
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
@@ -48,8 +50,14 @@ if not ORG_ID:
 
 root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
+if root_logger.level == logging.DEBUG:
+    formatter = logging.Formatter(
+        "[%(asctime)s] {%(pathname)s:%(lineno)d} %(name)s:%(levelname)s - %(message)s", "%m-%d %H:%M:%S"
+    )
+else:
+    formatter = logging.Formatter("%(asctime)s - %(name)s:%(levelname)s - %(message)s")
+
 ch = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(formatter)
 root_logger.addHandler(ch)
 
@@ -123,9 +131,12 @@ def handle_api_errors(func):
             return Response("Rate limited", status_code=429)
         except UnknownKeyException:
             return Response("Unknown key", status_code=404)
+        except SendRequestException:
+            return Response("Can't connect to bitwarden.com")
         except MissingSecretException:
             return Response("Secret not found", status_code=404)
-
+        except InvalidSecretIDException:
+            return Response("Invalid secret ID", status_code=400)
     return wrapper
 
 
@@ -205,9 +216,7 @@ def get_key(
         },
         500: {
             "model": ErrorResponse,
-            "content": {
-                "application/json": {"schema": ErrorResponse.model_json_schema()}
-            },
+            "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}},
             "description": "Internal server error",
         },
     },
