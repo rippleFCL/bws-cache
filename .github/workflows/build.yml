@@ -63,3 +63,11 @@ jobs:
           type=gha,scope=main
         cache-to: type=gha,mode=max
         provenance: false
+
+  release:
+    if: github.event_name == 'push'
+    needs: build
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    with:
+      version: ${{ github.ref_name }}
