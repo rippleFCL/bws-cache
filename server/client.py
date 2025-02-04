@@ -391,23 +391,25 @@ class CachedClientRefresher:
             clients = self.clients.list_clients()
             if clients:
                 logger.debug("refreshing %s clients ", len(clients))
-            for client_id, client in clients:
-                logger.debug("refreshing client id: %s", client_id)
-                try:
-                    client.refresh_cache()
-                except BWSAPIRateLimitExceededException:
-                    logger.info("rate limit exceeded for client %s", client_id)
-                    time.sleep(30)
-                except InvalidTokenException:
-                    logger.error("invalid token for client %s", client_id)
-                    self.clients.remove_client(client_id)
-                except SendRequestException:
-                    logger.info("cant sent request to upstream for client for client %s skipping...", client_id)
-                except Exception as e:
-                    logger.error("error occored while refreshing client")
-                    logger.debug(e, exc_info=True)
-                    self.clients.remove_client(client_id)
-            time.sleep(self.refresh_interval)
+                for client_id, client in clients:
+                    logger.debug("refreshing client id: %s", client_id)
+                    try:
+                        client.refresh_cache()
+                    except BWSAPIRateLimitExceededException:
+                        logger.info("rate limit exceeded for client %s", client_id)
+                        time.sleep(30)
+                    except InvalidTokenException:
+                        logger.error("invalid token for client %s", client_id)
+                        self.clients.remove_client(client_id)
+                    except SendRequestException:
+                        logger.info("cant sent request to upstream for client for client %s skipping...", client_id)
+                    except Exception as e:
+                        logger.error("error occored while refreshing client")
+                        logger.debug(e, exc_info=True)
+                        self.clients.remove_client(client_id)
+                    time.sleep(self.refresh_interval)
+            else:
+                time.sleep(1)
 
 
 class BwsClientManager:
