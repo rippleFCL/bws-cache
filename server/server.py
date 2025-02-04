@@ -228,4 +228,4 @@ def get_stats():
 
 @api.get("/healthcheck", response_model=HealthcheckResponse)
 def healthcheck():
-    return {"status": "im alive"}
+    return {"status": "I'm alive"}
