@@ -136,7 +136,6 @@ class BWSClient:
                 logger.debug("cannot connect to bitwarden.com")
                 raise SendRequestException() from e
             except Exception as e:
-                print(type(e))
                 logger.error("request failed with %s", e.args[0])
                 if "401 Unauthorized" in e.args[0]:
                     raise UnauthorizedTokenException("Unauthorized token") from e
