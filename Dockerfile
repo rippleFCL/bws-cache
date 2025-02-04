@@ -20,10 +20,21 @@ WORKDIR /app
 
 COPY --from=requirement-builder /app/requirements.txt /app
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    apt update && \
+    apt install -y curl && \
+    apt-get clean autoclean && \
+    apt-get autoremove --yes && \
+    rm -rf /var/lib/{apt,dpkg,cache,log}
 
 COPY server/ .
 
 EXPOSE 5000
+
+HEALTHCHECK \
+    --interval=15s \
+    --timeout=10s \
+    --start-period=15s \
+    CMD curl -fs http://localhost:5000/healthcheck
 
 ENTRYPOINT [ "uvicorn", "server:api" ]
