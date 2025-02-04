@@ -67,6 +67,8 @@ jobs:
   release:
     if: github.event_name == 'push'
     needs: build
+    permissions:
+      contents: write
     uses: ./.github/workflows/release.yml
     secrets: inherit
     with:
