@@ -184,7 +184,7 @@ class BWSClient:
         latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
         with self.client_lock:
             logger.debug("getting updated secrets")
-            secret_response = self.bws_client.secrets().sync(self.org_id, self.last_sync).data
+            secret_response = self.bws_client.secrets().sync(self.org_id, self.last_sync).data #type: ignore
         logger.debug("got updated secrets")
         self.last_sync = latest_sync
         if secret_response and secret_response.has_changes and secret_response.secrets:

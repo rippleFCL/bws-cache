@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Any, Literal
+from typing import Literal
 
 
 class SecretResponse(BaseModel):
@@ -8,7 +8,7 @@ class SecretResponse(BaseModel):
     value: str | dict | list
 
 
-class SuccResonse(BaseModel):
+class SuccessResonse(BaseModel):
     status: Literal["success"]
 
 class HealthcheckResponse(BaseModel):
@@ -19,7 +19,7 @@ class CacheStats(BaseModel):
     secret_cache_size: int
 
 
-class ResetResponse(SuccResonse):
+class ResetResponse(SuccessResonse):
     before: CacheStats
     after: CacheStats
 
