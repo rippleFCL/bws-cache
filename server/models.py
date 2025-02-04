@@ -12,7 +12,7 @@ class SuccResonse(BaseModel):
     status: Literal["success"]
 
 class HealthcheckResponse(BaseModel):
-    status: Literal["im alive"]
+    status: Literal["I'm alive"]
 
 class CacheStats(BaseModel):
     keymap_cache_size: int
