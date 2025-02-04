@@ -1,6 +1,8 @@
 name: Build
 
 on:
+  push:
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
     inputs:
@@ -9,7 +11,6 @@ on:
         required: false
         type: boolean
         default: true
-  workflow_call:
 
 env:
   REGISTRY: ghcr.io
@@ -62,3 +63,11 @@ jobs:
           type=gha,scope=main
         cache-to: type=gha,mode=max
         provenance: false
+
+  release:
+    if: github.event_name == 'push'
+    needs: build
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    with:
+      version: ${{ github.ref_name }}

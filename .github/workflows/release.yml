@@ -2,16 +2,15 @@
 name: Create release and changelog
 
 on:
-  push:
-    tags: ["v*"]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        type: string
 
 jobs:
-  build:
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
   release:
-    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,7 +29,7 @@ jobs:
         uses: requarks/changelog-action@v1
         with:
           token: ${{ github.token }}
-          tag: ${{ github.ref_name }}
+          tag: ${{ inputs.version }}
 
       - name: Create Release
         uses: ncipollo/release-action@v1
@@ -38,7 +37,7 @@ jobs:
           allowUpdates: true
           draft: false
           makeLatest: true
-          name: ${{ github.ref_name }}
+          name: ${{ inputs.version }}
           body: ${{ steps.changelog.outputs.changes }}
           token: ${{ github.token }}
 
@@ -46,28 +45,5 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           branch: main
-          commit_message: 'docs: update CHANGELOG.md for ${{ github.ref_name }}'
+          commit_message: 'docs: update CHANGELOG.md for ${{ inputs.version }}'
           file_pattern: CHANGELOG.md
-
-  publish:
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install poetry
-        run: pipx install poetry
-
-      - name: Setup python and restore poetry
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: "pyproject.toml"
-          cache: "poetry"
-
-      - name: Build package
-        run: poetry build
-
-      - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
