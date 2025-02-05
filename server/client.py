@@ -111,7 +111,9 @@ class BWSClient:
         self.bws_token = bws_token
         self.bws_client = self._make_client()
         self.client_lock = Lock()
-        self.last_sync = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=60)
+        self.last_sync = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        ) - datetime.timedelta(seconds=60)
 
     def _make_client(self):
         return BitwardenClient(
@@ -143,7 +145,10 @@ class BWSClient:
                     raise BWSAPIRateLimitExceededException("Too many requests") from e
                 elif "404 Not Found" in e.args[0]:
                     raise MissingSecretException() from e
-                elif "400 Bad Request" in e.args[0] or "Access token is not in a valid format" in e.args[0]:
+                elif (
+                    "400 Bad Request" in e.args[0]
+                    or "Access token is not in a valid format" in e.args[0]
+                ):
                     raise InvalidTokenException("Invalid token") from e
                 elif "error sending request for url" in e.args[0]:
                     raise SendRequestException() from e
@@ -157,11 +162,15 @@ class BWSClient:
     def auth(self, cache: bool = True):
         try:
             logger.debug("Authenticating client")
-            auth_cache_file = f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
-            # fixme: when rapid requests made with valid but expired token, the folllwing line hangs indefinitely
+            auth_cache_file = (
+                f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
+            )
+            # fixme: when rapid requests made with valid but expired token, the following line hangs indefinitely
             # not fixed but restructured to call this less
             with self.client_lock:
-                self.bws_client.auth().login_access_token(self.bws_token, auth_cache_file)
+                self.bws_client.auth().login_access_token(
+                    self.bws_token, auth_cache_file
+                )
         except Exception as e:
             logger.error("Request failed with %s", e.args[0])
 
@@ -184,13 +193,19 @@ class BWSClient:
         latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
         with self.client_lock:
             logger.debug("Getting updated secrets")
-            secret_response = self.bws_client.secrets().sync(self.org_id, self.last_sync).data  # type: ignore
+            secret_response = (
+                self.bws_client.secrets().sync(self.org_id, self.last_sync).data  # type: ignore
+            )  # type: ignore
         logger.debug("Got updated secrets")
         self.last_sync = latest_sync
         if secret_response and secret_response.has_changes and secret_response.secrets:
             for secret in secret_response.secrets:
                 logger.debug("Got updated secret %s", secret.id)
-                secrets.append(SecretResponse(SecretMetaData(secret.key, str(secret.id)), secret.value))
+                secrets.append(
+                    SecretResponse(
+                        SecretMetaData(secret.key, str(secret.id)), secret.value
+                    )
+                )
         else:
             logger.debug("No secrets updated")
         return secrets
@@ -243,7 +258,9 @@ class ClientRequester:
             try:
                 self.response_queue.put(response, timeout=self.request_interval)
             except TimeoutError:
-                logger.critical("Client did not consume the response, request thread unrecoverable")
+                logger.critical(
+                    "Client did not consume the response, request thread unrecoverable"
+                )
                 self.crashed = True
                 return
             time.sleep(self.request_interval)
@@ -331,7 +348,9 @@ class CachedBWSClient:
             self.reset_cache()
         with self.cache_lock:
             for secret in secrets:
-                logger.debug("Adding cache for secret %s, key %s", secret.id, secret.key)
+                logger.debug(
+                    "Adding cache for secret %s, key %s", secret.id, secret.key
+                )
                 self.secret_cache[secret.id] = secret
                 self.key_map[secret.key] = secret.id
 
@@ -360,12 +379,16 @@ class ClientList:
         hashed_token = generate_hash(token)
         with self._clients_lock:
             self._clients[hashed_token] = client
-        logger.debug("Adding client %s. total clients: %s", hashed_token, len(self._clients))
+        logger.debug(
+            "Adding client %s. total clients: %s", hashed_token, len(self._clients)
+        )
 
     def remove_client(self, hashed_token: str):
         with self._clients_lock:
             self._clients.pop(hashed_token, None)
-        logger.debug("Removed client %s. total clients: %s", hashed_token, len(self._clients))
+        logger.debug(
+            "Removed client %s. total clients: %s", hashed_token, len(self._clients)
+        )
 
     def get(self, token: str):
         hashed_token = generate_hash(token)
@@ -402,7 +425,10 @@ class CachedClientRefresher:
                         logger.error("Invalid token for client %s", client_id)
                         self.clients.remove_client(client_id)
                     except SendRequestException:
-                        logger.info("Can't sent request to upstream for client for client %s skipping...", client_id)
+                        logger.info(
+                            "Can't sent request to upstream for client for client %s skipping...",
+                            client_id,
+                        )
                     except Exception as e:
                         logger.error("Error occurred while refreshing client.")
                         logger.debug(e, exc_info=True)
@@ -443,7 +469,9 @@ class BwsClientManager:
         return ClientList()
 
     def _make_client(self, bws_secret_token: str):
-        client = CachedBWSClient(bws_secret_token, self.org_id, self.requester, self.prom_client)
+        client = CachedBWSClient(
+            bws_secret_token, self.org_id, self.requester, self.prom_client
+        )
         client.auth()
         return client
 

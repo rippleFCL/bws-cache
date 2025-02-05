@@ -12,12 +12,19 @@ from client import (
     UnauthorizedTokenException,
     UnknownKeyException,
     SendRequestException,
-    InvalidSecretIDException
+    InvalidSecretIDException,
 )
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
-from models import ErrorResponse, ResetResponse, CacheStats, SecretResponse, StatsResponse, HealthcheckResponse
+from models import (
+    ErrorResponse,
+    ResetResponse,
+    CacheStats,
+    SecretResponse,
+    StatsResponse,
+    HealthcheckResponse,
+)
 from prom_client import PromMetricsClient
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -46,7 +53,8 @@ root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
 if root_logger.level == logging.DEBUG:
     formatter = logging.Formatter(
-        "[%(asctime)s] {%(pathname)s:%(lineno)d} %(name)s:%(levelname)s - %(message)s", "%m-%d %H:%M:%S"
+        "[%(asctime)s] {%(pathname)s:%(lineno)d} %(name)s:%(levelname)s - %(message)s",
+        "%m-%d %H:%M:%S",
     )
 else:
     formatter = logging.Formatter("%(asctime)s - %(name)s:%(levelname)s - %(message)s")
@@ -131,6 +139,7 @@ def handle_api_errors(func):
             return Response("Secret not found", status_code=404)
         except InvalidSecretIDException:
             return Response("Invalid secret ID", status_code=400)
+
     return wrapper
 
 
@@ -210,7 +219,9 @@ def get_key(
         },
         500: {
             "model": ErrorResponse,
-            "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}},
+            "content": {
+                "application/json": {"schema": ErrorResponse.model_json_schema()}
+            },
             "description": "Internal server error",
         },
     },
