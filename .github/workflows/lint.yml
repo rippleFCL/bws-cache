@@ -1,4 +1,4 @@
-name: CI
+name: Lint and Format
 
 on:
   pull_request:
