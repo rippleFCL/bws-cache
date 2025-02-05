@@ -14,10 +14,13 @@ jobs:
       - run: pipx install poetry
       - uses: actions/setup-python@v5
         with:
+          python-version: '3.12'
           cache: 'poetry'
       - run: poetry install
       - run: echo "$(poetry env info --path)/bin" >> $GITHUB_PATH
       - uses: astral-sh/ruff-action@v3
+        with:
+          version-file: "./pyproject.toml"
 
   pyright:
     runs-on: ubuntu-latest
