@@ -11,8 +11,10 @@ class SecretResponse(BaseModel):
 class SuccessResonse(BaseModel):
     status: Literal["success"]
 
+
 class HealthcheckResponse(BaseModel):
     status: Literal["I'm alive"]
+
 
 class CacheStats(BaseModel):
     keymap_cache_size: int
