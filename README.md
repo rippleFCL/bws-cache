@@ -4,9 +4,9 @@ Python app implementing a read-through cache for Bitwarden Secrets Manager (BWS)
 
 # Usage
 
-When a secret is queried, not only is the secret cached in memory, but a mapping between ID and key is also cached.
+When a secret is queried, not only is the secret cached in memory, but a mapping between ID and key is also cached. This allows lookup by either ID or key, as shown below.
 
-This allows lookup by either ID or key, as shown below.
+There is also an Ansible lookup plugin. See [ansible_collection/README.md](ansible_collection/README.md) for more information.
 
 ## Endpoints
 
