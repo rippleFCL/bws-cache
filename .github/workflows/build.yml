@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    tags: ['v*']
+    tags: ['server-v*']
     paths-ignore: ["ansible_collection/**"]
   pull_request:
     paths-ignore: ["ansible_collection/**"]
