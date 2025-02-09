@@ -38,7 +38,7 @@ RETURN = """
     description: Retrieved secret
     type: str
     returned: success
-    sample: "{"id": "01fae166-302b-4e75-b7a4-c6887ef7e3a8", "key": "my_secret_key", "value": "my_secret_value"}"
+    sample: '{"id": "01fae166-302b-4e75-b7a4-c6887ef7e3a8", "key": "my_secret_key", "value": "my_secret_value"}'
 """
 
 import uuid  # noqa: E402

@@ -17,7 +17,7 @@ readme: README.md
 # A list of the collection's content authors. Can be just the name or in the format 'Full Name <email> (url)
 # @nicks:irc/im.site#channel'
 authors:
-- tigattack <10629864+tigattack@users.noreply.github.com>
+  - tigattack <10629864+tigattack@users.noreply.github.com>
 
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
@@ -30,6 +30,7 @@ license_file: '../LICENSE'
 # A list of tags you want to associate with the collection for indexing/searching. A tag name has the same character
 # requirements as 'namespace' and 'name'
 tags:
+  - security
   - secret
   - bitwarden
   - bitwarden_secrets_manager
