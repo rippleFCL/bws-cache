@@ -11,15 +11,44 @@ on:
 
 env:
   COLLECTION_PATH: ansible_collection
+  GALAXY_FILE: ansible_collection/galaxy.yml
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: ansible/ansible-lint@v25.1.2
         with:
           working_directory: ${{ env.COLLECTION_PATH }}
+
+      - name: Parse collection version
+        id: collection_version
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq '.version' '${{ env.GALAXY_FILE }}'
+
+      - name: Assert collection version matches tag
+        run: |
+          if [[ "${{ steps.collection_version.outputs.result }}" != "${GITHUB_REF#refs/tags/ansible-v}" ]]; then
+            line=$(grep -no '^version:\s\d.*$' ${{ env.GALAXY_FILE }} | cut -d: -f1)
+            echo "::error file=${{ env.GALAXY_FILE }},line=${line}::Version in galaxy.yml does not match tag"
+            echo "❌ Version in galaxy.yml does not match git tag" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Version in galaxy.yml matches git tag" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Assert changelog includes version
+        run: |
+          if ! grep -q "^## ${GITHUB_REF#refs/tags/ansible-v}" ${{ env.COLLECTION_PATH }}/CHANGELOG.md; then
+            echo "::error file=${{ env.COLLECTION_PATH }}/CHANGELOG.md::Changelog does not include tagged version"
+            echo "❌ Changelog does not include a section for the tagged version" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Changelog includes tagged version" >> $GITHUB_STEP_SUMMARY
+          fi
 
   publish:
     runs-on: ubuntu-latest
