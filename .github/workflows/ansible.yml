@@ -57,12 +57,23 @@ jobs:
           fi
 
   publish_galaxy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ansible-v')
     needs:
       - lint
       - publish_checks
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/ansible-v')
-    uses: ansible/ansible-content-actions/.github/workflows/release_galaxy.yaml@v0.1.1
-    with:
-      environment: release
-    secrets:
-      ansible_galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the collection
+        run: |
+          ansible-galaxy collection build -v --force
+
+      - name: Publish the collection to Ansible Galaxy
+        run: >
+          [[ "${{ secrets.GALAXY_API_KEY != '' }}" ]] || { echo
+          "GALAXY_API_KEY secret is required to publish on galaxy" ; exit 1; }
+
+          TARBALL=$(ls -1 ./*.tar.gz)
+
+          ansible-galaxy collection publish "${TARBALL}" --api-key "${{ secrets.GALAXY_API_KEY }}"
