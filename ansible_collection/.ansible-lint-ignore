@@ -1,0 +1,3 @@
+# This file contains ignores rule violations for ansible-lint
+galaxy.yml yaml[comments]
+meta/runtime.yml yaml[comments]
