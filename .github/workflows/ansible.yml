@@ -9,9 +9,9 @@ on:
     paths: ["ansible_collection/**"]
   workflow_dispatch:
 
-env:
-  COLLECTION_PATH: ansible_collection
-  GALAXY_FILE: ansible_collection/galaxy.yml
+defaults:
+  run:
+    working-directory: ansible_collection
 
 jobs:
   lint:
@@ -21,7 +21,7 @@ jobs:
 
       - uses: ansible/ansible-lint@v25.1.2
         with:
-          working_directory: ${{ env.COLLECTION_PATH }}
+          working_directory: ansible_collection
 
   publish_checks:
     runs-on: ubuntu-latest
@@ -33,13 +33,13 @@ jobs:
         id: collection_version
         uses: mikefarah/yq@master
         with:
-          cmd: yq '.version' '${{ env.GALAXY_FILE }}'
+          cmd: yq '.version' 'galaxy.yml'
 
       - name: Assert collection version matches tag
         run: |
           if [[ "${{ steps.collection_version.outputs.result }}" != "${GITHUB_REF#refs/tags/ansible-v}" ]]; then
-            line=$(grep -no '^version:\s\d.*$' ${{ env.GALAXY_FILE }} | cut -d: -f1)
-            echo "::error file=${{ env.GALAXY_FILE }},line=${line}::Version in galaxy.yml does not match tag"
+            line=$(grep -no '^version:\s\d.*$' galaxy.yml | cut -d: -f1)
+            echo "::error file=galaxy.yml,line=${line}::Version in galaxy.yml does not match tag"
             echo "❌ Version in galaxy.yml does not match git tag" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
@@ -48,8 +48,8 @@ jobs:
 
       - name: Assert changelog includes version
         run: |
-          if ! grep -q "^## ${GITHUB_REF#refs/tags/ansible-v}" ${{ env.COLLECTION_PATH }}/CHANGELOG.md; then
-            echo "::error file=${{ env.COLLECTION_PATH }}/CHANGELOG.md::Changelog does not include tagged version"
+          if ! grep -q "^## ${GITHUB_REF#refs/tags/ansible-v}" CHANGELOG.md; then
+            echo "::error file=$(basename $PWD)/CHANGELOG.md::Changelog does not include tagged version"
             echo "❌ Changelog does not include a section for the tagged version" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
