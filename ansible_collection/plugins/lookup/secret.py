@@ -123,6 +123,6 @@ class BwsCacheSecretLookup:
 
 
 class LookupModule(LookupBase):
-    def run(self, terms, variables=None, **kwargs):
+    def run(self, terms, variables=None, **kwargs):  # type: ignore
         bws_cache = BwsCacheSecretLookup()
         return [bws_cache.get_secret(term) for term in terms]
