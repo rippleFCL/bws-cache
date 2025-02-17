@@ -41,12 +41,16 @@ RETURN = """
     sample: '{"id": "01fae166-302b-4e75-b7a4-c6887ef7e3a8", "key": "my_secret_key", "value": "my_secret_value"}'
 """
 
-import uuid  # noqa: E402
+import http.client  # noqa: E402
+import json  # noqa: E402
 import os  # noqa: E402
+import uuid  # noqa: E402
+from urllib.parse import urlparse  # noqa: E402
 
-import requests  # noqa: E402
-from ansible.errors import AnsibleLookupError, AnsibleUndefinedVariable  # type: ignore # noqa: E402
-
+from ansible.errors import (  # type: ignore # noqa: E402
+    AnsibleLookupError,
+    AnsibleUndefinedVariable,
+)
 from ansible.plugins.lookup import LookupBase  # type: ignore # noqa: E402
 from ansible.utils.display import Display  # type: ignore # noqa: E402
 
@@ -71,57 +75,51 @@ class BwsCacheSecretLookup:
         except ValueError:
             return False
 
-    def query_secret_id(self, secret_id: str):
-        """Get and return the secret with the given secret_id."""
-        try:
-            response = requests.get(
-                f"{self.bws_cache_url}/id/{secret_id}", headers=self.headers, timeout=5
-            )
-            return response
-        except requests.exceptions.Timeout:
-            raise BwsCacheSecretLookupException("Timed out while querying bws-cache.")
-        except requests.exceptions.HTTPError as err:
-            raise BwsCacheSecretLookupException(
-                f"{err.response.status_code} {err.response.text}"
+    def make_request(self, endpoint: str):
+        """Perform an HTTP GET request to the specified endpoint."""
+        if not self.bws_cache_url:
+            raise AnsibleUndefinedVariable(
+                "BWS_CACHE_URL environment variable must be set."
             )
 
-    def query_secret_key(self, secret_key: str):
-        """Get and return the secret with the given secret_key."""
+        parsed_url = urlparse(self.bws_cache_url)
+        conn = (
+            http.client.HTTPSConnection(parsed_url.netloc, timeout=5)
+            if parsed_url.scheme == "https"
+            else http.client.HTTPConnection(parsed_url.netloc, timeout=5)
+        )
+
         try:
-            response = requests.get(
-                f"{self.bws_cache_url}/key/{secret_key}",
-                headers=self.headers,
-                timeout=5,
-            )
-            return response
-        except requests.exceptions.Timeout:
-            raise BwsCacheSecretLookupException("Timed out while querying bws-cache.")
-        except requests.exceptions.HTTPError as err:
+            conn.request("GET", f"{parsed_url.path}{endpoint}", headers=self.headers)
+            response = conn.getresponse()
+            data = response.read()
+            conn.close()
+
+            if response.status == 200:
+                return json.loads(data)
             raise BwsCacheSecretLookupException(
-                f"{err.response.status_code} {err.response.text}"
+                f"Failed to retrieve secret: {response.status} - {data.decode()}"
+            )
+        except (http.client.HTTPException, TimeoutError) as err:
+            raise BwsCacheSecretLookupException(
+                f"Error while querying bws-cache: {err}"
             )
 
     def get_secret(self, secret_identifier: str):
         """Get and return the secret with the given secret_id or secret_key."""
-        if not self.bws_token or not self.bws_cache_url:
+        if not self.bws_token:
             raise AnsibleUndefinedVariable(
-                "BWS_ACCESS_TOKEN and BWS_CACHE_URL environment variables must be set."
+                "BWS_ACCESS_TOKEN environment variable must be set."
             )
 
         if self.is_valid_uuid(secret_identifier):
             display.verbose("bws_cache: input matches UUID format; retrieving by ID.")
-            response = self.query_secret_id(secret_identifier)
+            return self.make_request(f"/id/{secret_identifier}")
         else:
             display.verbose(
                 "bws_cache: input does not match UUID format; retrieving by key."
             )
-            response = self.query_secret_key(secret_identifier)
-
-        if response.status_code == 200:
-            return response.json()
-        raise BwsCacheSecretLookupException(
-            f"Failed to retrieve secret: {response.status_code} - {response.text}"
-        )
+            return self.make_request(f"/key/{secret_identifier}")
 
 
 class LookupModule(LookupBase):
