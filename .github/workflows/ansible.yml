@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ansible/ansible-lint@v25.1.2
+      - uses: ansible/ansible-lint@v25.1.3
         with:
           working_directory: ${{ env.COLLECTION_PATH }}
 
