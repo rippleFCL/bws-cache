@@ -1,0 +1,24 @@
+---
+
+# Run with: ansible-playbook test.yml -i localhost,
+
+- name: Test BWS Cache Lookup
+  hosts: all
+  gather_facts: false
+  vars_prompt:
+    - name: "secret_key"
+      prompt: "Enter secret key to test with"
+  pre_tasks:
+    - name: Get secret ID
+      ansible.builtin.set_fact:
+        secret_id: "{{ lookup('secret', secret_key).id }}"
+  tasks:
+    - name: Lookup ID
+      ansible.builtin.debug:
+        msg: "{{ lookup('secret', secret_id) }}"
+      loop: "{{ range(1, 100) }}"
+
+    - name: Lookup Key
+      ansible.builtin.debug:
+        msg: "{{ lookup('secret', secret_key) }}"
+      loop: "{{ range(1, 100) }}"
