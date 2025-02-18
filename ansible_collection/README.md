@@ -1,4 +1,6 @@
-# Ansible Collection - ripplefcl.bwscache
+# Ansible Collection - [ripplefcl.bwscache](https://galaxy.ansible.com/ui/repo/published/ripplefcl/bwscache)
+
+[![Build Status][build_badge]][build_link]
 
 This collection provides a lookup plugin for querying bws-cache.
 
@@ -39,3 +41,6 @@ ansible-galaxy collection install ripplefcl.bwscache
 
 # Returns: "my_secret_value"
 ```
+
+[build_badge]:  https://img.shields.io/github/actions/workflow/status/rippleFCL/bws-cache/ansible.yml?branch=main&label=Ansible%20Lint
+[build_link]:   https://github.com/rippleFCL/bws-cache/actions/workflows/ansible.yml
