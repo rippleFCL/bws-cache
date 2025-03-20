@@ -94,12 +94,13 @@ async def prom_middleware(request: Request, call_next):
     endpoint = None
     for api_endpoint in api_mapping:
         if request.url.path.startswith(api_endpoint):
-            api_endpoint = api_endpoint
+            endpoint = request.url.path
     st = time.time()
     return_data: Response = await call_next(request)
     if endpoint and isinstance(return_data, Response):
         prom_client.tick_http_request_total(endpoint, str(return_data.status_code))
         prom_client.tick_http_request_duration(endpoint, time.time() - st)
+    prom_client.tick_stats(client_manager.stats())
     return return_data
 
 
