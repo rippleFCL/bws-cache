@@ -1,4 +1,3 @@
-from telnetlib import GA
 from prometheus_client import Counter, Gauge
 from prometheus_client import REGISTRY
 from prometheus_client.exposition import choose_encoder
