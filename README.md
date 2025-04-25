@@ -33,7 +33,7 @@ Invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http:/
 
 # Run
 
-You can get your BWS organisation ID two ways:
+You can get your BWS organisation ID in two ways:
 * From BWS CLI:
   * `bws project list` / `bws project get <project_id>` - Your organisation ID is shown in the `organizationId` value of each project returned.
   * `bws secret list` / `bws secret get <secret_id>` - Your organisation ID is shown in the `organizationId` value of each secret returned.
