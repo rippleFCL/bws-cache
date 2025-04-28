@@ -1,3 +1,7 @@
+## 1.1.1
+
+* fix: handle trailing slash in `BWS_CACHE_URL`
+
 ## 1.1.0
 
 * feat: remove external dependencies (use `http.client` instead of `requests`)
