@@ -64,7 +64,14 @@ class BwsCacheSecretLookupException(AnsibleLookupError):
 class BwsCacheSecretLookup:
     def __init__(self) -> None:
         self.bws_token = os.environ.get("BWS_ACCESS_TOKEN")
-        self.bws_cache_url = os.environ.get("BWS_CACHE_URL")
+        bws_cache_url = os.environ.get("BWS_CACHE_URL")
+
+        # Normalise BWS_CACHE_URL
+        if bws_cache_url and bws_cache_url.endswith('/'):
+            self.bws_cache_url = bws_cache_url.rstrip('/')
+        else:
+            self.bws_cache_url = bws_cache_url
+
         self.headers = {"Authorization": f"Bearer {self.bws_token}"}
 
     def is_valid_uuid(self, val):
@@ -75,7 +82,7 @@ class BwsCacheSecretLookup:
         except ValueError:
             return False
 
-    def make_request(self, endpoint: str):
+    def make_request(self, request_path: str):
         """Perform an HTTP GET request to the specified endpoint."""
         if not self.bws_cache_url:
             raise AnsibleUndefinedVariable(
@@ -89,8 +96,13 @@ class BwsCacheSecretLookup:
             else http.client.HTTPConnection(parsed_url.netloc, timeout=5)
         )
 
+        # Ensure endpoint starts with a slash
+        if not request_path.startswith('/'):
+            request_path = f"/{request_path}"
+
         try:
-            conn.request("GET", f"{parsed_url.path}{endpoint}", headers=self.headers)
+            request_url = f"{parsed_url.path}{request_path}"
+            conn.request("GET", request_url, headers=self.headers)
             response = conn.getresponse()
             data = response.read()
             conn.close()
