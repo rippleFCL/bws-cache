@@ -1,4 +1,5 @@
 import datetime
+import enum
 import functools
 import hashlib
 import json
@@ -15,43 +16,63 @@ import yaml
 from bitwarden_sdk import BitwardenClient, DeviceType, client_settings_from_dict
 from models import CacheStats, StatsResponse
 from prom_client import PromMetricsClient
-
-PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
-
+from errors import (
+    BWSAPIRateLimitExceededException,
+    InvalidSecretIDException,
+    InvalidTokenException,
+    MissingSecretException,
+    NoDefaultOrgIdException,
+    NoDefaultRegionException,
+    SendRequestException,
+    UnauthorizedTokenException,
+    UnknownKeyException,
+    UnknownOrgIdException,
+)
 
 logger = logging.getLogger("bwscache.client")
 
 
-def generate_hash(value: str) -> str:
+class RegionEnum(enum.Enum):
+    DEFAULT = "DEFAULT"
+    EU = "EU"
+    CUSTOM = "CUSTOM"
+    NONE = "NONE"
+
+
+@dataclass
+class Region:
+    api_url: str
+    identity_url: str
+
+
+REGION_MAPPING = {
+    RegionEnum.DEFAULT: Region(
+        api_url="https://api.bitwarden.com",
+        identity_url="https://identity.bitwarden.com",
+    ),
+    RegionEnum.EU: Region(
+        api_url="https://api.bitwarden.eu", identity_url="https://identity.bitwarden.eu"
+    ),
+}
+
+
+PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == "true"
+
+API_URL = os.environ.get("BWS_API_URL", "")
+IDENTITY_URL = os.environ.get("BWS_IDENTITY_URL", "")
+
+if not (not API_URL and not IDENTITY_URL) and not (API_URL and IDENTITY_URL):
+    raise ValueError("BWS_API_URL and BWS_IDENTITY_URL must be set")
+elif API_URL and IDENTITY_URL:
+    logger.info("custom region set using BWS_API_URL and BWS_IDENTITY_URL")
+    REGION_MAPPING[RegionEnum.CUSTOM] = Region(
+        api_url=API_URL, identity_url=IDENTITY_URL
+    )
+
+
+def generate_hash(value: str, org_id: str, region: Region) -> str:
+    value = f"{value}{org_id}{region.api_url}{region.identity_url}"
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
-
-class InvalidTokenException(Exception):
-    pass
-
-
-class UnauthorizedTokenException(Exception):
-    pass
-
-
-class BWSAPIRateLimitExceededException(Exception):
-    pass
-
-
-class MissingSecretException(Exception):
-    pass
-
-
-class UnknownKeyException(Exception):
-    pass
-
-
-class SendRequestException(Exception):
-    pass
-
-
-class InvalidSecretIDException(Exception):
-    pass
 
 
 @dataclass
@@ -106,7 +127,8 @@ class SecretResponse:
 
 
 class BWSClient:
-    def __init__(self, bws_token: str, org_id: str):
+    def __init__(self, bws_token: str, org_id: str, region: Region):
+        self.region = region
         self.org_id = org_id
         self.bws_token = bws_token
         self.bws_client = self._make_client()
@@ -119,9 +141,9 @@ class BWSClient:
         return BitwardenClient(
             client_settings_from_dict(
                 {
-                    "apiUrl": "https://api.bitwarden.com",
+                    "apiUrl": self.region.api_url,
                     "deviceType": DeviceType.SDK,
-                    "identityUrl": "https://identity.bitwarden.com",
+                    "identityUrl": self.region.identity_url,
                     "userAgent": "Python",
                 }
             )
@@ -143,8 +165,10 @@ class BWSClient:
                     raise UnauthorizedTokenException("Unauthorized token") from e
                 elif "429 Too Many Requests" in e.args[0]:
                     raise BWSAPIRateLimitExceededException("Too many requests") from e
-                elif "404 Not Found" in e.args[0]:
+                elif "404 Not Found" in e.args[0] and "Secret not found" in e.args[0]:
                     raise MissingSecretException() from e
+                elif "404 Not Found" in e.args[0] and "Resource not found" in e.args[0]:
+                    raise UnknownOrgIdException() from e
                 elif (
                     "400 Bad Request" in e.args[0]
                     or "Access token is not in a valid format" in e.args[0]
@@ -162,9 +186,7 @@ class BWSClient:
     def auth(self, cache: bool = True):
         try:
             logger.debug("Authenticating client")
-            auth_cache_file = (
-                f"/dev/shm/token_{generate_hash(self.bws_token)}" if cache else ""
-            )
+            auth_cache_file = f"/dev/shm/token_{self.client_hash}" if cache else ""
             # fixme: when rapid requests made with valid but expired token, the following line hangs indefinitely
             # not fixed but restructured to call this less
             with self.client_lock:
@@ -220,6 +242,10 @@ class BWSClient:
             return SecretResponse(SecretMetaData(data.key, str(data.id)), data.value)
         logger.debug("Upstream secret %s not found", secret_uuid)
         return None
+
+    @property
+    def client_hash(self):
+        return generate_hash(self.bws_token, self.org_id, self.region)
 
 
 class RequesterCrash(Exception):
@@ -284,19 +310,20 @@ class CachedBWSClient:
         self,
         bws_secret_token: str,
         org_id: str,
+        region: Region,
         requester: ClientRequester,
         prom_client: PromMetricsClient,
     ):
         self.prom_client = prom_client
-        self.client = self._make_client(bws_secret_token, org_id)
+        self.client = self._make_client(bws_secret_token, org_id, region)
         self.requester = requester
         self.secret_cache: dict[str, SecretResponse] = {}
         self.key_map: dict[str, str] = {}
         self.cache_lock = Lock()
 
     @staticmethod
-    def _make_client(bws_secret_token: str, org_id: str):
-        return BWSClient(bws_secret_token, org_id)
+    def _make_client(bws_secret_token: str, org_id: str, region: Region):
+        return BWSClient(bws_secret_token, org_id, region)
 
     def auth(self):
         self.client.auth()
@@ -369,35 +396,42 @@ class CachedBWSClient:
                 keymap_cache_size=len(self.key_map),
             )
 
+    @property
+    def client_hash(self):
+        return self.client.client_hash
+
 
 class ClientList:
     def __init__(self):
         self._clients: dict[str, CachedBWSClient] = {}
         self._clients_lock = Lock()
 
-    def add_client(self, token: str, client: CachedBWSClient):
-        hashed_token = generate_hash(token)
+    def add_client(self, client: CachedBWSClient):
         with self._clients_lock:
-            self._clients[hashed_token] = client
+            self._clients[client.client_hash] = client
         logger.debug(
-            "Adding client %s. total clients: %s", hashed_token, len(self._clients)
+            "Adding client %s. total clients: %s",
+            client.client_hash,
+            len(self._clients),
         )
 
-    def remove_client(self, hashed_token: str):
+    def remove_client(self, client: CachedBWSClient):
         with self._clients_lock:
-            self._clients.pop(hashed_token, None)
+            self._clients.pop(client.client_hash, None)
         logger.debug(
-            "Removed client %s. total clients: %s", hashed_token, len(self._clients)
+            "Removed client %s. total clients: %s",
+            client.client_hash,
+            len(self._clients),
         )
 
-    def get(self, token: str):
-        hashed_token = generate_hash(token)
+    def get(self, token: str, org_id: str, region: Region):
+        hashed_token = generate_hash(token, org_id, region)
         with self._clients_lock:
             return self._clients.get(hashed_token, None)
 
     def list_clients(self):
         with self._clients_lock:
-            return self._clients.copy().items()
+            return list(self._clients.copy().values())
 
 
 class CachedClientRefresher:
@@ -414,25 +448,30 @@ class CachedClientRefresher:
             clients = self.clients.list_clients()
             if clients:
                 logger.debug("Refreshing %s clients.", len(clients))
-                for client_id, client in clients:
-                    logger.debug("Refreshing client id: %s", client_id)
+                for client in clients:
+                    logger.debug("Refreshing client id: %s", client.client_hash)
                     try:
                         client.refresh_cache()
                     except BWSAPIRateLimitExceededException:
-                        logger.info("Rate limit exceeded for client %s", client_id)
+                        logger.info(
+                            "Rate limit exceeded for client %s", client.client_hash
+                        )
                         time.sleep(30)
                     except InvalidTokenException:
-                        logger.error("Invalid token for client %s", client_id)
-                        self.clients.remove_client(client_id)
+                        logger.error("Invalid token for client %s", client.client_hash)
+                        self.clients.remove_client(client)
+                    except UnknownOrgIdException:
+                        logger.error("Unknown org ID for client %s", client.client_hash)
+                        self.clients.remove_client(client)
                     except SendRequestException:
                         logger.info(
                             "Can't sent request to upstream for client for client %s skipping...",
-                            client_id,
+                            client.client_hash,
                         )
                     except Exception as e:
                         logger.error("Error occurred while refreshing client.")
                         logger.debug(e, exc_info=True)
-                        self.clients.remove_client(client_id)
+                        self.clients.remove_client(client)
                     time.sleep(self.refresh_interval)
             else:
                 time.sleep(1)
@@ -442,11 +481,13 @@ class BwsClientManager:
     def __init__(
         self,
         prom_client: PromMetricsClient,
-        org_id: str,
+        default_org_id: str | None,
+        default_region: Region | None,
         secret_refresh_interval: int,
         secret_request_interval: int,
     ):
-        self.org_id = org_id
+        self.org_id = default_org_id
+        self.region = default_region
         self.prom_client = prom_client
         self.client_list = self._make_client_list()
         self.refresher = self._make_refresher(secret_refresh_interval, self.client_list)
@@ -468,26 +509,38 @@ class BwsClientManager:
     def _make_client_list():
         return ClientList()
 
-    def _make_client(self, bws_secret_token: str):
+    def _make_client(self, bws_secret_token: str, org_id: str, region: Region):
         client = CachedBWSClient(
-            bws_secret_token, self.org_id, self.requester, self.prom_client
+            bws_secret_token, org_id, region, self.requester, self.prom_client
         )
         client.auth()
         return client
 
-    def get_client_by_token(self, bws_secret_token) -> CachedBWSClient:
-        client = self.client_list.get(bws_secret_token)
+    def get_client(
+        self, bws_secret_token, org_id: str | None, region: Region | None
+    ) -> CachedBWSClient:
+        if org_id is None:
+            if self.org_id is None:
+                raise NoDefaultOrgIdException("Default org id is not set")
+            org_id = self.org_id
+
+        if region is None:
+            if self.region is None:
+                raise NoDefaultRegionException("Default region is not set")
+            region = self.region
+
+        client = self.client_list.get(bws_secret_token, org_id, region)
         if client is None:
             logger.debug("Creating new client")
-            client = self._make_client(bws_secret_token)
+            client = self._make_client(bws_secret_token, org_id, region)
 
-            self.client_list.add_client(bws_secret_token, client)
+            self.client_list.add_client(client)
         return client
 
     def stats(self) -> StatsResponse:
         clients_stats: dict[str, CacheStats] = {}
-        for hashed_token, client in self.client_list.list_clients():
-            clients_stats[hashed_token] = client.stats()
+        for client in self.client_list.list_clients():
+            clients_stats[client.client_hash] = client.stats()
 
         secret_cache_size_sum = 0
         keymap_cache_size_sum = 0
