@@ -29,6 +29,10 @@ Query secret by ID: `curl -H "Authorization: Bearer <BWS token>" http://localhos
 
 Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/key/my_secret`
 
+Query secret by key in a different region: `curl -H "Authorization: Bearer <BWS token>" -H "X-BWS-REGION: EU" http://localhost:5000/key/my_secret`
+
+Query secret by key in a different org: `curl -H "Authorization: Bearer <BWS token>" -H "X-ORG-ID: <org_id>" http://localhost:5000/key/my_secret`
+
 Invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
 
 # Run
@@ -65,13 +69,18 @@ services:
 
 ## Environment Variables
 
-| Name                  | Info                                                                                     | Default  |
-|-----------------------|------------------------------------------------------------------------------------------|----------|
-| `ORG_ID`              | Your BWS organisation ID.                                                                |          |
-| `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`  |
-| `REQUEST_RATE`        | Seconds between each secret update request from BWS API.                                 | `1`      |
-| `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`     |
-| `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING`|
+| Name                  | Info                                                                                     | Default   |
+|-----------------------|------------------------------------------------------------------------------------------|-----------|
+| `ORG_ID`              | Your BWS organisation ID. If not set it must be provided per request.                    |           |
+| `BWS_REGION`          | Your BWS region. Can be set to `DEFAULT`, `EU`, `CUSTOM` and `NONE`                      | `DEFAULT` |
+| `BWS_API_URl`         | Sets the API URL of the `CUSTOM` region.                                                 |           |
+| `BWS_IDENTITY_URL`    | Sets the IDENTITY URL of the `CUSTOM` region.                                            |           |
+| `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`   |
+| `REQUEST_RATE`        | Seconds between each secret update request from BWS API.                                 | `1`       |
+| `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`      |
+| `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING` |
+
+The `CUSTOM` `BWS_REGION` only becomes aviable when `BWS_API_URL` and `BWS_IDENTITY_URL` are set
 
 # How It Works
 
@@ -104,6 +113,21 @@ Secrets are **always** returned from cache. If the requested secret ID doesn't e
 For key lookups (`/key/<secret key>`), the keymap cache is searched for the provided key. If found, the secret ID is retrieved from the keymap cache and used to search the secret cache. The rest of the process is then as described above for a standard secret ID lookup. If the keymap cache is empty, bws-cache pulls a list of all secret IDs and keys to build the keymap cache.
 
 Each client syncs updated secrets in the background on a defined schedule (see `REFRESH_RATE`). Only one client updates at a time, respecting the rate limit defined with `REFRESH_RATE`, to avoid the BWS API's rate limits.
+
+### Request headers and server defaults
+
+| Headers              | Info                                                     |
+|----------------------|----------------------------------------------------------|
+| `X-BWS-ORG-ID`       | Your BWS organisation ID.                                |
+| `X-BWS-REGION`       | The region the BWSC server connects to.                  |
+| `X-BWS-API-URL`      | Sets the API URL of the region to connect with           |
+| `X-BWS-IDENTITY-URL` | Sets the identity URL of the region to authenticate with |
+
+Both `X-BWS-API-URL` and `X-BWS-IDENTITY-URL` **must** be set together. when they are set they override the region options and will instead connect to the URLs you provide.
+
+Any unset headers will use the defaults provided in the BWSC server's config. if no
+defaults are provided you will get an error
+
 
 # Request Flow Diagram
 
