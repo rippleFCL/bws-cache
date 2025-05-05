@@ -4,16 +4,27 @@ import os
 import time
 from typing import Annotated
 
+
 from client import (
-    BWSAPIRateLimitExceededException,
     BwsClientManager,
+    RegionEnum,
+    Region,
+    REGION_MAPPING,
+)
+
+from errors import (
+    BWSAPIRateLimitExceededException,
     InvalidTokenException,
     MissingSecretException,
     UnauthorizedTokenException,
     UnknownKeyException,
     SendRequestException,
     InvalidSecretIDException,
+    NoDefaultOrgIdException,
+    NoDefaultRegionException,
+    UnknownOrgIdException,
 )
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
@@ -27,16 +38,11 @@ from models import (
 )
 from prom_client import PromMetricsClient
 
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-root_logger = logging.getLogger()
-
-logger = logging.getLogger("bwscache.server")
-
-ORG_ID = os.environ.get("ORG_ID", "")
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
-REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
-REFRESH_RATE = int(os.environ.get("REFRESH_RATE", "10"))
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+root_logger = logging.getLogger()
+logger = logging.getLogger("bwscache.server")
 
 mode_mapping = {
     "DEBUG": logging.DEBUG,
@@ -45,11 +51,6 @@ mode_mapping = {
     "ERROR": logging.ERROR,
     "CRITICAL": logging.CRITICAL,
 }
-
-if not ORG_ID:
-    raise ValueError("ORG_ID is required")
-
-root_logger.setLevel(mode_mapping[LOG_LEVEL])
 
 if root_logger.level == logging.DEBUG:
     formatter = logging.Formatter(
@@ -62,6 +63,36 @@ else:
 ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 root_logger.addHandler(ch)
+
+root_logger.setLevel(mode_mapping[LOG_LEVEL])
+logger.info("Logging level set to %s", LOG_LEVEL)
+
+ORG_ID = os.environ.get("ORG_ID", None)
+REQUEST_RATE = int(os.environ.get("REQUEST_RATE", "1"))
+REFRESH_RATE = int(os.environ.get("REFRESH_RATE", "10"))
+REGION_ENV = os.environ.get("BWS_REGION", "DEFAULT").upper()
+
+if REGION_ENV not in RegionEnum:
+    raise ValueError("BWS_REGION must be one of DEFAULT, EU, NONE or CUSTOM")
+
+REGION = RegionEnum[REGION_ENV]
+
+try:
+    DEFAULT_REGION = REGION_MAPPING[REGION]
+    logger.info("region set to %s", DEFAULT_REGION)
+except KeyError:
+    if REGION == RegionEnum.CUSTOM:
+        raise ValueError(
+            "BWS_REGION is CUSTOM but BWS_API_URL and BWS_IDENTITY_URL are not set"
+        )
+    elif REGION == RegionEnum.NONE:
+        DEFAULT_REGION = None
+        logger.warning("No default region set")
+    else:
+        raise ValueError("a Unknown region was provided")
+
+if ORG_ID is None:
+    logger.warning("No default org id set")
 
 
 api = FastAPI()
@@ -81,7 +112,9 @@ else:
 
 
 prom_client = PromMetricsClient()
-client_manager = BwsClientManager(prom_client, ORG_ID, REFRESH_RATE, REQUEST_RATE)
+client_manager = BwsClientManager(
+    prom_client, ORG_ID, DEFAULT_REGION, REFRESH_RATE, REQUEST_RATE
+)
 
 
 @api.middleware("http")
@@ -126,6 +159,8 @@ def handle_api_errors(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
+        except UnknownOrgIdException:
+            return Response("Unknown org ID", status_code=404)
         except InvalidTokenException:
             return Response("Invalid token", status_code=401)
         except UnauthorizedTokenException:
@@ -140,6 +175,16 @@ def handle_api_errors(func):
             return Response("Secret not found", status_code=404)
         except InvalidSecretIDException:
             return Response("Invalid secret ID", status_code=400)
+        except NoDefaultOrgIdException:
+            return Response(
+                "No org ID set. Set BWS_ORG_ID environment variable for a default or provide one in the request via the X-BWS-ORG-ID header",
+                status_code=400,
+            )
+        except NoDefaultRegionException:
+            return Response(
+                "No region set. Set BWS_DEFAULT_REGION environment variable for a default, provide one in the request via the X-BWS-REGION header or set X-BWS-API-URL and X-BWS-IDENTITY-URL HEADERS",
+                status_code=400,
+            )
 
     return wrapper
 
@@ -148,6 +193,34 @@ def handle_auth(authorization: Annotated[str, Header()]):
     if authorization.startswith("Bearer "):
         return authorization.split()[-1]
     raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def get_org_id(x_bws_org_id: Annotated[str | None, Header()] = None):
+    if x_bws_org_id:
+        return x_bws_org_id
+    return None
+
+
+def get_region(
+    x_bws_region: Annotated[str | None, Header()] = None,
+    x_bws_api_endpoint: Annotated[str | None, Header()] = None,
+    x_bws_identity_endpoint: Annotated[str | None, Header()] = None,
+):
+    if x_bws_api_endpoint and x_bws_identity_endpoint:
+        return Region(x_bws_api_endpoint, x_bws_identity_endpoint)
+    elif x_bws_api_endpoint or x_bws_identity_endpoint:
+        raise HTTPException(
+            status_code=400,
+            detail="X-BWS-API-URL and X-BWS-IDENTITY-URL must be used together",
+        )
+    if x_bws_region:
+        if x_bws_region in RegionEnum:
+            return REGION_MAPPING[RegionEnum[x_bws_region]]
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid region, must be one of 'DEFAULT', 'EU', 'CUSTOM' or 'NONE'",
+        )
+    return None
 
 
 @api.get(
@@ -162,8 +235,12 @@ def handle_auth(authorization: Annotated[str, Header()]):
     },
 )
 @handle_api_errors
-def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
-    client = client_manager.get_client_by_token(authorization)
+def reset_cache(
+    authorization: Annotated[str, Depends(handle_auth)],
+    org_id: Annotated[str | None, Depends(get_org_id)],
+    region: Annotated[Region | None, Depends(get_region)],
+):
+    client = client_manager.get_client(authorization, org_id, region)
     stats = client.reset_cache()
     return ResetResponse(
         status="success",
@@ -185,8 +262,13 @@ def reset_cache(authorization: Annotated[str, Depends(handle_auth)]):
     },
 )
 @handle_api_errors
-def get_id(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
-    client = client_manager.get_client_by_token(authorization)
+def get_id(
+    authorization: Annotated[str, Depends(handle_auth)],
+    org_id: Annotated[str | None, Depends(get_org_id)],
+    region: Annotated[Region | None, Depends(get_region)],
+    secret_id: str,
+):
+    client = client_manager.get_client(authorization, org_id, region)
     return client.get_secret_by_id(secret_id).to_json()
 
 
@@ -205,9 +287,11 @@ def get_id(authorization: Annotated[str, Depends(handle_auth)], secret_id: str):
 @handle_api_errors
 def get_key(
     authorization: Annotated[str, Depends(handle_auth)],
+    org_id: Annotated[str | None, Depends(get_org_id)],
+    region: Annotated[Region | None, Depends(get_region)],
     secret_key: str,
 ):
-    client = client_manager.get_client_by_token(authorization)
+    client = client_manager.get_client(authorization, org_id, region)
     return client.get_secret_by_key(secret_key).to_json()
 
 
