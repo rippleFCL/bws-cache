@@ -31,7 +31,7 @@ Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localho
 
 Query secret by key in a different region: `curl -H "Authorization: Bearer <BWS token>" -H "X-BWS-REGION: EU" http://localhost:5000/key/my_secret`
 
-Query secret by key in a different org: `curl -H "Authorization: Bearer <BWS token>" -H "X-ORG-ID: <org_id>" http://localhost:5000/key/my_secret`
+Query secret by key in a different organisation: `curl -H "Authorization: Bearer <BWS token>" -H "X-ORG-ID: <org_id>" http://localhost:5000/key/my_secret`
 
 Invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
 
@@ -71,16 +71,17 @@ services:
 
 | Name                  | Info                                                                                     | Default   |
 |-----------------------|------------------------------------------------------------------------------------------|-----------|
-| `ORG_ID`              | Your BWS organisation ID. If not set it must be provided per request.                    |           |
-| `BWS_REGION`          | Your BWS region. Can be set to `DEFAULT`, `EU`, `CUSTOM` and `NONE`                      | `DEFAULT` |
-| `BWS_API_URl`         | Sets the API URL of the `CUSTOM` region.                                                 |           |
-| `BWS_IDENTITY_URL`    | Sets the IDENTITY URL of the `CUSTOM` region.                                            |           |
+| `ORG_ID`              | Your BWS organisation ID. If unset, it must be provided per request. See below.          |           |
+| `BWS_REGION`          | Your BWS region. Can be set to `DEFAULT`, `EU`, `CUSTOM`, or `NONE`                      | `DEFAULT` |
+| `BWS_API_URl`         | Bitwarden API URL. Required if `BWS_REGION` is set to `CUSTOM`.                          |           |
+| `BWS_IDENTITY_URL`    | Bitwarden IDENTITY URL. Required if `BWS_REGION` is set to `CUSTOM`.                     |           |
 | `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`   |
 | `REQUEST_RATE`        | Seconds between each secret update request from BWS API.                                 | `1`       |
 | `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`      |
 | `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING` |
 
-The `CUSTOM` `BWS_REGION` only becomes aviable when `BWS_API_URL` and `BWS_IDENTITY_URL` are set
+> [!NOTE]
+> If `BWS_REGION` is set to `CUSTOM`, the `BWS_API_URL` and `BWS_IDENTITY_URL` environment variables must be set.
 
 # How It Works
 
@@ -119,15 +120,13 @@ Each client syncs updated secrets in the background on a defined schedule (see `
 | Headers              | Info                                                     |
 |----------------------|----------------------------------------------------------|
 | `X-BWS-ORG-ID`       | Your BWS organisation ID.                                |
-| `X-BWS-REGION`       | The region the BWSC server connects to.                  |
-| `X-BWS-API-URL`      | Sets the API URL of the region to connect with           |
-| `X-BWS-IDENTITY-URL` | Sets the identity URL of the region to authenticate with |
+| `X-BWS-REGION`       | Your Bitwarden account region.                           |
+| `X-BWS-API-URL`      | Bitwarden API URL.                                       |
+| `X-BWS-IDENTITY-URL` | Bitwarden Identity URL.                                  |
 
-Both `X-BWS-API-URL` and `X-BWS-IDENTITY-URL` **must** be set together. when they are set they override the region options and will instead connect to the URLs you provide.
+Both `X-BWS-API-URL` and `X-BWS-IDENTITY-URL` **must** be set together. When set, they override the region options and will instead connect to the URLs you provide.
 
-Any unset headers will use the defaults provided in the BWSC server's config. if no
-defaults are provided you will get an error
-
+Headers values will take precedence over the server's environment variables, but the server's env-vars will be used if headers are unset.
 
 # Request Flow Diagram
 
