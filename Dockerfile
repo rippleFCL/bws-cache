@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm AS requirement-builder
+FROM python:3.13-slim-bookworm AS requirement-builder
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY ./poetry.lock /app
 
 RUN poetry export --without-hashes -f requirements.txt --output requirements.txt
 
-FROM python:3.12-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
     ORG_ID= \
