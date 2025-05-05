@@ -61,7 +61,7 @@ PARSE_SECRET_VALUES = os.environ.get("PARSE_SECRET_VALUES", "false").lower() == 
 API_URL = os.environ.get("BWS_API_URL", "")
 IDENTITY_URL = os.environ.get("BWS_IDENTITY_URL", "")
 
-if not (not API_URL and not IDENTITY_URL) and not (API_URL and IDENTITY_URL):
+if (API_URL and not IDENTITY_URL) or (IDENTITY_URL and not API_URL):
     raise ValueError("BWS_API_URL and BWS_IDENTITY_URL must be set")
 elif API_URL and IDENTITY_URL:
     logger.info("custom region set using BWS_API_URL and BWS_IDENTITY_URL")
