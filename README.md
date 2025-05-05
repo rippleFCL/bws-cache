@@ -115,7 +115,7 @@ For key lookups (`/key/<secret key>`), the keymap cache is searched for the prov
 
 Each client syncs updated secrets in the background on a defined schedule (see `REFRESH_RATE`). Only one client updates at a time, respecting the rate limit defined with `REFRESH_RATE`, to avoid the BWS API's rate limits.
 
-### Request headers and server defaults
+## Request headers and server defaults
 
 | Headers              | Info                                                     |
 |----------------------|----------------------------------------------------------|
