@@ -1,3 +1,7 @@
+## 1.2.0
+
+* feat: feat(secret.py): added headers to ansible lookup plugin
+
 ## 1.1.1
 
 * fix: handle trailing slash in `BWS_CACHE_URL`
