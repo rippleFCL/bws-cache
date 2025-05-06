@@ -46,7 +46,6 @@ jobs:
           type=match,pattern=(v\d.\d.\d)
           type=match,pattern=(v\d.\d)
           type=match,pattern=(v\d)
-          type=ref,event=tag
           type=ref,event=pr
 
     - name: Build and push image
