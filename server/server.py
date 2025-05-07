@@ -333,6 +333,6 @@ def get_stats():
     return client_manager.stats()
 
 
-@api.get("/healthcheck", response_model=HealthcheckResponse)
+@api.head("/healthcheck", response_model=HealthcheckResponse)
 def healthcheck():
     return {"status": "I'm alive"}
