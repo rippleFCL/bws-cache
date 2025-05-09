@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v2.6.1] - 2025-05-09
+### :sparkles: New Features
+- [`34e5883`](https://github.com/rippleFCL/bws-cache/commit/34e5883e1b3b0c327d0ab43b6610b5e48e51e6cf) - **dockerfile**: make the container rootless
+
+### :wrench: Chores
+- [`6bb3192`](https://github.com/rippleFCL/bws-cache/commit/6bb31923185e5443ef3bccac3095f92f0b55b05f) - **galaxy.yml**: bump ansible galaxy version
+- [`a2b84c0`](https://github.com/rippleFCL/bws-cache/commit/a2b84c0e3f89ec7a3e5e536b8967f9741b41a8c2) - **CHANGELOG.md**: update ansible changelog
+- [`a8c18e3`](https://github.com/rippleFCL/bws-cache/commit/a8c18e3637932c45b053137c5e1541e6ac593064) - **deps**: update dependency ruff to v0.11.9 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+
+
 ## [server-v2.6.0] - 2025-05-06
 ### :sparkles: New Features
 - [`65d8074`](https://github.com/rippleFCL/bws-cache/commit/65d8074b2f79a56f94382378595959ca94956890) - add region settings and allow requests to overwrite bwsc defaults
@@ -53,3 +63,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.4.2]: https://github.com/rippleFCL/bws-cache/compare/v2.4.1...v2.4.2
 [server-v2.5.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.1.0...server-v2.5.0
 [server-v2.6.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.1.1...server-v2.6.0
+[server-v2.6.1]: https://github.com/rippleFCL/bws-cache/compare/server-v2.6.0...server-v2.6.1
