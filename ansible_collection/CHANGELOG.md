@@ -1,3 +1,7 @@
+## 1.2.1
+
+fix: increase request timeout to 15 seconds
+
 ## 1.2.0
 
 * feat: feat(secret.py): added headers to ansible lookup plugin
