@@ -46,7 +46,6 @@ files = [
 [package.dependencies]
 idna = ">=2.8"
 sniffio = ">=1.1"
-typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 doc = ["Sphinx (>=7.4,<8.0)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx_rtd_theme"]
@@ -1100,5 +1099,5 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 
 [metadata]
 lock-version = "2.1"
-python-versions = "~3.12"
-content-hash = "0fbc3aafb0186715c18dbb42e236c50ee6dcc2bf4c63b9908afb32b8551c8f46"
+python-versions = "~3.13.0"
+content-hash = "e355dafe43761cb77e26482bfad43e3c9350d1e324db56612b76e064a2db78a3"
