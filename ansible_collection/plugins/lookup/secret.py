@@ -62,6 +62,8 @@ from ansible.utils.display import Display  # type: ignore # noqa: E402
 
 display = Display()
 
+REQUEST_TIMEOUT = 15
+
 
 class BwsCacheSecretLookupException(AnsibleLookupError):
     pass
@@ -105,9 +107,9 @@ class BwsCacheSecretLookup:
 
         parsed_url = urlparse(self.bws_cache_url)
         conn = (
-            http.client.HTTPSConnection(parsed_url.netloc, timeout=5)
+            http.client.HTTPSConnection(parsed_url.netloc, timeout=REQUEST_TIMEOUT)
             if parsed_url.scheme == "https"
-            else http.client.HTTPConnection(parsed_url.netloc, timeout=5)
+            else http.client.HTTPConnection(parsed_url.netloc, timeout=REQUEST_TIMEOUT)
         )
 
         # Ensure endpoint starts with a slash
