@@ -1,8 +1,6 @@
-from prometheus_client import Counter, Gauge
-from prometheus_client import REGISTRY
-from prometheus_client.exposition import choose_encoder
-
 from models import StatsResponse
+from prometheus_client import REGISTRY, Counter, Gauge
+from prometheus_client.exposition import choose_encoder
 
 
 class PromMetricsClient:
@@ -35,10 +33,18 @@ class PromMetricsClient:
     def tick_stats(self, stats: StatsResponse):
         self.num_clients.set(stats.num_clients)
         for client, client_stats in stats.client_stats.items():
-            self.cache_size.labels(type="secret", client=client).set(client_stats.secret_cache_size)
-            self.cache_size.labels(type="keymap", client=client).set(client_stats.keymap_cache_size)
-        self.cache_size.labels(type="secret", client="total").set(stats.total_stats.secret_cache_size)
-        self.cache_size.labels(type="keymap", client="total").set(stats.total_stats.keymap_cache_size)
+            self.cache_size.labels(type="secret", client=client).set(
+                client_stats.secret_cache_size
+            )
+            self.cache_size.labels(type="keymap", client=client).set(
+                client_stats.keymap_cache_size
+            )
+        self.cache_size.labels(type="secret", client="total").set(
+            stats.total_stats.secret_cache_size
+        )
+        self.cache_size.labels(type="keymap", client="total").set(
+            stats.total_stats.keymap_cache_size
+        )
 
     def generate_metrics(self, accept_header):
         generate_latest, content_type = choose_encoder(accept_header)

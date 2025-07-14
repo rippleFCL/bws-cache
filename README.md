@@ -31,27 +31,15 @@ Query secret by key: `curl -H "Authorization: Bearer <BWS token>" http://localho
 
 Query secret by key in a different region: `curl -H "Authorization: Bearer <BWS token>" -H "X-BWS-REGION: EU" http://localhost:5000/key/my_secret`
 
-Query secret by key in a different organisation: `curl -H "Authorization: Bearer <BWS token>" -H "X-ORG-ID: <org_id>" http://localhost:5000/key/my_secret`
-
 Invalidate the secret cache: `curl -H "Authorization: Bearer <BWS token>" http://localhost:5000/reset`
 
 # Run
-
-You can get your BWS organisation ID in two ways:
-* From BWS CLI:
-  * `bws project list` / `bws project get <project_id>` - Your organisation ID is shown in the `organizationId` value of each project returned.
-  * `bws secret list` / `bws secret get <secret_id>` - Your organisation ID is shown in the `organizationId` value of each secret returned.
-* From browser:
-  1. Go to https://vault.bitwarden.com
-  2. Open Secrets Manager from the apps list in the top right
-  3. Your organisation ID is in the URL like this: `https://vault.bitwarden.com/#/sm/<BWS org ID>`
 
 Docker Run:
 
 ```
 docker run \
   -p 5000:5000 \
-  -e ORG_ID=<org ID> \
   ghcr.io/ripplefcl/bws-cache:latest
 ```
 
@@ -61,8 +49,6 @@ Docker Compose:
 services:
   bwscache:
     image: ghcr.io/ripplefcl/bws-cache:latest
-    environment:
-      ORG_ID: <org ID>
     ports:
       - '5000:5000'
 ```
@@ -71,12 +57,10 @@ services:
 
 | Name                  | Info                                                                                     | Default   |
 |-----------------------|------------------------------------------------------------------------------------------|-----------|
-| `ORG_ID`              | Your BWS organisation ID. If unset, it must be provided per request. See below.          |           |
 | `BWS_REGION`          | Your BWS region. Can be set to `DEFAULT`, `EU`, `CUSTOM`, or `NONE`                      | `DEFAULT` |
 | `BWS_API_URl`         | Bitwarden API URL. Required if `BWS_REGION` is set to `CUSTOM`.                          |           |
 | `BWS_IDENTITY_URL`    | Bitwarden IDENTITY URL. Required if `BWS_REGION` is set to `CUSTOM`.                     |           |
 | `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`   |
-| `REQUEST_RATE`        | Seconds between each secret update request from BWS API.                                 | `1`       |
 | `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`      |
 | `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING` |
 
@@ -119,7 +103,6 @@ Each client syncs updated secrets in the background on a defined schedule (see `
 
 | Headers              | Info                                                     |
 |----------------------|----------------------------------------------------------|
-| `X-BWS-ORG-ID`       | Your BWS organisation ID.                                |
 | `X-BWS-REGION`       | Your Bitwarden account region.                           |
 | `X-BWS-API-URL`      | Bitwarden API URL.                                       |
 | `X-BWS-IDENTITY-URL` | Bitwarden Identity URL.                                  |
