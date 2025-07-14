@@ -181,26 +181,24 @@ class BWSClient:
 
     @_handle_api_errors
     def get_updated_secrets(self):
-        secrets: list[SecretResponse] = []
+        update_secrets: list[SecretResponse] = []
         latest_sync = datetime.datetime.now(tz=datetime.timezone.utc)
         with self.client_lock:
             logger.debug("Getting updated secrets")
-            secrets = (
-                self.bws_client.sync(self.last_sync)  # type: ignore
-            )  # type: ignore
+            secrets = self.bws_client.sync(self.last_sync)  # type: ignore
         logger.debug("Got updated secrets")
         self.last_sync = latest_sync
         if secrets:
             for secret in secrets:
                 logger.debug("Got updated secret %s", secret.id)
-                secrets.append(
+                update_secrets.append(
                     SecretResponse(
                         SecretMetaData(secret.key, str(secret.id)), secret.value
                     )
                 )
         else:
             logger.debug("No secrets updated")
-        return secrets
+        return update_secrets
 
     @property
     def client_hash(self):
