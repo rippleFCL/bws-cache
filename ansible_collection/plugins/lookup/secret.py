@@ -7,12 +7,11 @@ DOCUMENTATION = """
     author: tigattack (@tigattack)
     version_added: "1.0.0"
     requirements:
-      - requests Python package
+      - E(requests) Python package
       - E(BWS_ACCESS_TOKEN) environment variable
       - E(BWS_CACHE_URL) environment variable
     seealso:
       - E(BWS_REGION): environment variable
-      - E(BWS_ORG_ID): environment variable
       - E(BWS_API_URL): environment variable
       - E(BWS_IDENTITY_URL): environment variable
       - https://github.com/ripplefcl/bws-cache#request-headers-and-server-defaults
@@ -83,7 +82,6 @@ class BwsCacheSecretLookup:
         headers = {
             "Authorization": f"Bearer {self.bws_token}",
             "X-BWS-REGION": os.environ.get("BWS_REGION"),
-            "X-BWS-ORG-ID": os.environ.get("BWS_ORG_ID"),
             "X-BWS-API-URL": os.environ.get("BWS_API_URL"),
             "X-BWS-IDENTITY-URL": os.environ.get("BWS_IDENTITY_URL"),
         }
