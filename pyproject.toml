@@ -10,7 +10,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "~3.13"
 fastapi = "^0.115.6"
-prometheus-client = "^0.21.1"
+prometheus-client = "^0.22.0"
 pyyaml = "^6.0.2"
 uvicorn = "^0.34.0"
 requests = "^2.32.3"
