@@ -12,7 +12,6 @@ RUN poetry export --without-hashes -f requirements.txt --output requirements.txt
 FROM python:3.13-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
-    ORG_ID= \
     UVICORN_HOST=0.0.0.0 \
     UVICORN_PORT=5000
 

@@ -21,7 +21,6 @@ from errors import (
     SendRequestException,
     UnauthorizedTokenException,
     UnknownKeyException,
-    UnknownOrgIdException,
 )
 from models import CacheStats, StatsResponse
 from prom_client import PromMetricsClient
@@ -146,8 +145,6 @@ class BWSClient:
                     raise BWSAPIRateLimitExceededException("Too many requests") from e
                 elif "404 Not Found" in e.args[0] and "Secret not found" in e.args[0]:
                     raise MissingSecretException() from e
-                elif "404 Not Found" in e.args[0] and "Resource not found" in e.args[0]:
-                    raise UnknownOrgIdException() from e
                 elif (
                     "400 Bad Request" in e.args[0]
                     or "Access token is not in a valid format" in e.args[0]
@@ -344,9 +341,6 @@ class CachedClientRefresher:
                         time.sleep(30)
                     except InvalidTokenException:
                         logger.error("Invalid token for client %s", client.client_hash)
-                        self.clients.remove_client(client)
-                    except UnknownOrgIdException:
-                        logger.error("Unknown org ID for client %s", client.client_hash)
                         self.clients.remove_client(client)
                     except SendRequestException:
                         logger.info(

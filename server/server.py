@@ -19,7 +19,6 @@ from errors import (
     SendRequestException,
     UnauthorizedTokenException,
     UnknownKeyException,
-    UnknownOrgIdException,
 )
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
@@ -148,8 +147,6 @@ def handle_api_errors(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except UnknownOrgIdException:
-            return Response("Unknown org ID", status_code=404)
         except InvalidTokenException:
             return Response("Invalid token", status_code=401)
         except UnauthorizedTokenException:
