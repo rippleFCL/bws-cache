@@ -8,14 +8,10 @@ import os
 import time
 from dataclasses import dataclass
 from threading import Lock, Thread
+
 import requests
-
 import yaml
-
 from bws_sdk import BWSecretClient, Region
-
-from models import CacheStats, StatsResponse
-from prom_client import PromMetricsClient
 from errors import (
     BWSAPIRateLimitExceededException,
     InvalidSecretIDException,
@@ -27,6 +23,8 @@ from errors import (
     UnknownKeyException,
     UnknownOrgIdException,
 )
+from models import CacheStats, StatsResponse
+from prom_client import PromMetricsClient
 
 logger = logging.getLogger("bwscache.client")
 

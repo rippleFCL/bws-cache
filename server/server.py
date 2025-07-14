@@ -4,36 +4,33 @@ import os
 import time
 from typing import Annotated
 
-
 from client import (
-    BwsClientManager,
-    RegionEnum,
-    Region,
     REGION_MAPPING,
+    BwsClientManager,
+    Region,
+    RegionEnum,
 )
-
 from errors import (
     BWSAPIRateLimitExceededException,
+    InvalidSecretIDException,
     InvalidTokenException,
     MissingSecretException,
+    NoDefaultRegionException,
+    SendRequestException,
     UnauthorizedTokenException,
     UnknownKeyException,
-    SendRequestException,
-    InvalidSecretIDException,
-    NoDefaultRegionException,
     UnknownOrgIdException,
 )
-
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import PlainTextResponse
 from models import (
-    ErrorResponse,
-    ResetResponse,
     CacheStats,
+    ErrorResponse,
+    HealthcheckResponse,
+    ResetResponse,
     SecretResponse,
     StatsResponse,
-    HealthcheckResponse,
 )
 from prom_client import PromMetricsClient
 
