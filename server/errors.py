@@ -22,15 +22,7 @@ class SendRequestException(Exception):
     pass
 
 
-class UnknownOrgIdException(Exception):
-    pass
-
-
 class InvalidSecretIDException(Exception):
-    pass
-
-
-class NoDefaultOrgIdException(Exception):
     pass
 
 
