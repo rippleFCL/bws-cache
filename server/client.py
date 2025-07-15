@@ -11,7 +11,7 @@ from threading import Lock, Thread
 
 import requests
 import yaml
-from bws_sdk import BWSecretClient, Region
+from bws_sdk import ApiError, BWSecretClient, Region
 from errors import (
     BWSAPIRateLimitExceededException,
     InvalidSecretIDException,
@@ -123,30 +123,27 @@ class BWSClient:
         self.last_sync = datetime.datetime.now(
             tz=datetime.timezone.utc
         ) - datetime.timedelta(seconds=60)
-        self.bws_client = BWSecretClient(
-            region, bws_token, f"/dev/shm/token_{self.client_hash}"
-        )
+        self.bws_client = self.make_client(bws_token, region)
 
     @staticmethod
     def _handle_api_errors(func):
         @functools.wraps(func)
         def wrapper(self: "BWSClient", *args, **kwargs):
             try:
-                requests.head("https://bitwarden.com", timeout=5)
                 return func(self, *args, **kwargs)
             except requests.exceptions.RequestException as e:
                 logger.debug("Cannot connect to bitwarden.com")
                 raise SendRequestException() from e
-            except Exception as e:
+            except ApiError as e:
                 logger.error("Request failed with %s", e.args[0])
-                if "401 Unauthorized" in e.args[0]:
+                if "401" in e.args[0]:
                     raise UnauthorizedTokenException("Unauthorized token") from e
-                elif "429 Too Many Requests" in e.args[0]:
+                elif "429" in e.args[0]:
                     raise BWSAPIRateLimitExceededException("Too many requests") from e
-                elif "404 Not Found" in e.args[0] and "Secret not found" in e.args[0]:
+                elif "404" in e.args[0] and "Secret not found" in e.args[0]:
                     raise MissingSecretException() from e
                 elif (
-                    "400 Bad Request" in e.args[0]
+                    "400" in e.args[0]
                     or "Access token is not in a valid format" in e.args[0]
                 ):
                     raise InvalidTokenException("Invalid token") from e
@@ -157,6 +154,10 @@ class BWSClient:
                 raise e
 
         return wrapper
+
+    @_handle_api_errors
+    def make_client(self, bws_token: str, region: Region) -> BWSecretClient:
+        return BWSecretClient(region, bws_token, f"/dev/shm/token_{self.client_hash}")
 
     @_handle_api_errors
     def list_secrets(self):
@@ -347,9 +348,8 @@ class CachedClientRefresher:
                             "Can't sent request to upstream for client for client %s skipping...",
                             client.client_hash,
                         )
-                    except Exception as e:
-                        logger.error("Error occurred while refreshing client.")
-                        logger.debug(e, exc_info=True)
+                    except Exception:
+                        logger.exception("Error occurred while refreshing client.")
                         self.clients.remove_client(client)
                     time.sleep(self.refresh_interval)
             else:
