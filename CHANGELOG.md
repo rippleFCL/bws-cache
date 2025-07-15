@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.0.0] - 2025-07-15
+### :boom: BREAKING CHANGES
+- due to [`a181559`](https://github.com/rippleFCL/bws-cache/commit/a181559fc79ca66937d3a9bde3fd317def9d2e09) - switched to bws-sdk *(commit by [@rippleFCL](https://github.com/rippleFCL))*:
+
+  switched to bws-sdk
+
+
+### :sparkles: New Features
+- [`a181559`](https://github.com/rippleFCL/bws-cache/commit/a181559fc79ca66937d3a9bde3fd317def9d2e09) - switched to bws-sdk *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+### :bug: Bug Fixes
+- [`9fc3e33`](https://github.com/rippleFCL/bws-cache/commit/9fc3e3356105af3e9f4b163e634fb4de51cb62ab) - fix type issues *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`bd574b5`](https://github.com/rippleFCL/bws-cache/commit/bd574b524c94f0a64d401ed99e2935b15dd89eaa) - **deps**: update dependency prometheus-client to ^0.22.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`9911a17`](https://github.com/rippleFCL/bws-cache/commit/9911a179831e21524cd2b8d5d23f4eea6b4714d4) - remove exceptions for deprecated `ORG_ID` *(commit by [@tigattack](https://github.com/tigattack))*
+- [`bdad4d2`](https://github.com/rippleFCL/bws-cache/commit/bdad4d2ef3d32e77801c81ba660f05775a8a12ee) - **ansible_collection**: remove deprecated header *(commit by [@tigattack](https://github.com/tigattack))*
+- [`66c3733`](https://github.com/rippleFCL/bws-cache/commit/66c3733f413cca2412f9fefdf1cd5de961f8fdbe) - **dockerfile**: remove deprecated env var *(commit by [@tigattack](https://github.com/tigattack))*
+- [`cb20f5d`](https://github.com/rippleFCL/bws-cache/commit/cb20f5d83a70b3dec830ce96be1c40f612bd27c0) - **deps**: update dependency uvicorn to ^0.35.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`900379c`](https://github.com/rippleFCL/bws-cache/commit/900379c202ad2d77bbef4f4a417846c26b8795e9) - **deps**: update dependency fastapi to ^0.116.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+
+### :wrench: Chores
+- [`f051931`](https://github.com/rippleFCL/bws-cache/commit/f051931424a2be0752ef732ed8d053733cc130f7) - **deps**: update stefanzweifel/git-auto-commit-action action to v6 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`9c5d7b9`](https://github.com/rippleFCL/bws-cache/commit/9c5d7b9ccc425bf0a104b9bcb3872b00849a1b45) - bump python version in lint pipeline *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`12281a4`](https://github.com/rippleFCL/bws-cache/commit/12281a473a2654748edef356a3b33375b8f4baf2) - formating *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`10b7621`](https://github.com/rippleFCL/bws-cache/commit/10b76214742e6c40b792db4da79270821363fb40) - enable additional Ruff rules *(commit by [@tigattack](https://github.com/tigattack))*
+- [`c1dac22`](https://github.com/rippleFCL/bws-cache/commit/c1dac22db53173ba600897590cf22df18c63224b) - remove type ignore *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`fbaf085`](https://github.com/rippleFCL/bws-cache/commit/fbaf0857fda514e74050bd56b3c16e032e136541) - **deps**: update dependency ruff to ^0.12.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`bb83b51`](https://github.com/rippleFCL/bws-cache/commit/bb83b51859cf71db4e1d83624f3c00e6f86b0b44) - **ansible_collection**: bump version *(commit by [@tigattack](https://github.com/tigattack))*
+
+
 ## [server-v2.6.1] - 2025-05-09
 ### :sparkles: New Features
 - [`34e5883`](https://github.com/rippleFCL/bws-cache/commit/34e5883e1b3b0c327d0ab43b6610b5e48e51e6cf) - **dockerfile**: make the container rootless
@@ -64,3 +93,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v2.5.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.1.0...server-v2.5.0
 [server-v2.6.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.1.1...server-v2.6.0
 [server-v2.6.1]: https://github.com/rippleFCL/bws-cache/compare/server-v2.6.0...server-v2.6.1
+[server-v3.0.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.2.1...server-v3.0.0
