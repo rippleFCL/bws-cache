@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.0.1] - 2025-07-15
+### :bug: Bug Fixes
+- [`fcbe535`](https://github.com/rippleFCL/bws-cache/commit/fcbe53537c9069e9e099e21878dabb8fa26fc3b1) - switched core api error handling to sdk ApiError *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`0351467`](https://github.com/rippleFCL/bws-cache/commit/035146776299a5ff80c6f3d2a5d7cb90006db6b6) - propergate errors on client instantiation *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+### :wrench: Chores
+- [`de4d3a1`](https://github.com/rippleFCL/bws-cache/commit/de4d3a16706c90d243d90784a7edec7830fb075e) - relock *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+
 ## [server-v3.0.0] - 2025-07-15
 ### :boom: BREAKING CHANGES
 - due to [`a181559`](https://github.com/rippleFCL/bws-cache/commit/a181559fc79ca66937d3a9bde3fd317def9d2e09) - switched to bws-sdk *(commit by [@rippleFCL](https://github.com/rippleFCL))*:
@@ -94,3 +103,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v2.6.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.1.1...server-v2.6.0
 [server-v2.6.1]: https://github.com/rippleFCL/bws-cache/compare/server-v2.6.0...server-v2.6.1
 [server-v3.0.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.2.1...server-v3.0.0
+[server-v3.0.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.0...server-v3.0.1
