@@ -123,9 +123,7 @@ class BWSClient:
         self.last_sync = datetime.datetime.now(
             tz=datetime.timezone.utc
         ) - datetime.timedelta(seconds=60)
-        self.bws_client = BWSecretClient(
-            region, bws_token, f"/dev/shm/token_{self.client_hash}"
-        )
+        self.bws_client = self.make_client(bws_token, region)
 
     @staticmethod
     def _handle_api_errors(func):
@@ -156,6 +154,10 @@ class BWSClient:
                 raise e
 
         return wrapper
+
+    @_handle_api_errors
+    def make_client(self, bws_token: str, region: Region) -> BWSecretClient:
+        return BWSecretClient(region, bws_token, f"/dev/shm/token_{self.client_hash}")
 
     @_handle_api_errors
     def list_secrets(self):
