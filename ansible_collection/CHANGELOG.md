@@ -1,3 +1,7 @@
+## 1.3.0
+
+fix: remove deprecated header
+
 ## 1.2.1
 
 fix: increase request timeout to 15 seconds
