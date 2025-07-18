@@ -61,11 +61,16 @@ services:
 | `BWS_API_URl`         | Bitwarden API URL. Required if `BWS_REGION` is set to `CUSTOM`.                          |           |
 | `BWS_IDENTITY_URL`    | Bitwarden IDENTITY URL. Required if `BWS_REGION` is set to `CUSTOM`.                     |           |
 | `PARSE_SECRET_VALUES` | Parse JSON or YAML in secret values and return the resulting object instead of raw text. | `false`   |
+| `ENABLE_TELEMETRY`    | Enable Sentry exception logging (makes it easier to diagnose issues).                    | `false`   |
 | `REFRESH_RATE`        | Seconds between checking for updated secrets on each client.                             | `10`      |
 | `LOG_LEVEL`           | Logging level for bws-cache.                                                             | `WARNING` |
 
 > [!NOTE]
 > If `BWS_REGION` is set to `CUSTOM`, the `BWS_API_URL` and `BWS_IDENTITY_URL` environment variables must be set.
+
+> [!NOTE]
+> Enabling telemetry will only send unhandled exceptions or application crashes to us. This makes fixing and diagnosing issues easier and faster.  
+> **No sensitive data is included.**
 
 # How It Works
 
