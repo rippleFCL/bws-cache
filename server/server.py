@@ -84,7 +84,7 @@ except KeyError:
     else:
         raise ValueError("a Unknown region was provided")
 
-if os.environ.get("ENABLE_SENTRY", "false").lower() == "true":
+if os.environ.get("ENABLE_TELEMETRY", "false").lower() == "true":
     import sentry_sdk
 
     sentry_sdk.init(
