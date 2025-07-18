@@ -89,7 +89,7 @@ if os.environ.get("ENABLE_TELEMETRY", "false").lower() == "true":
 
     sentry_sdk.init(
         dsn="https://dc49189fab59b5237fe2d73a6baba08d@sentry.beryju.io/7",
-        # Add data like request headers and IP for users,
+        # Don't add data like request headers and IP for users,
         # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
         send_default_pii=False,
     )
