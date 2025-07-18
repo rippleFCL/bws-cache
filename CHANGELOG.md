@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.1.0] - 2025-07-18
+### :sparkles: New Features
+- [`f1e6968`](https://github.com/rippleFCL/bws-cache/commit/f1e69681e19ae6d9b7ee15d12733a7e016b10ddf) - added sentry *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`6b34bcd`](https://github.com/rippleFCL/bws-cache/commit/6b34bcda4989faaa07be721bc813ebf33f3d5be1) - added docs for sentry env var *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`649c4ab`](https://github.com/rippleFCL/bws-cache/commit/649c4ab52525bd213402aad1ad1fa13089089247) - document what we include in telemetry *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+### :bug: Bug Fixes
+- [`f082960`](https://github.com/rippleFCL/bws-cache/commit/f082960770722d48aaa8b225f1509cffbb11a7db) - **deps**: update dependency bws-sdk to v0.1.4 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`b33783e`](https://github.com/rippleFCL/bws-cache/commit/b33783e41d2148c0d0545e72cf63010d153f8865) - better name for telemetry env var *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`258bed9`](https://github.com/rippleFCL/bws-cache/commit/258bed9a2dd7915d99f2c46b7d9cafd1741b9d00) - bump bws-sdk version to 0.1.4 *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`11e6ed9`](https://github.com/rippleFCL/bws-cache/commit/11e6ed976d3e856efe305ebcbdfe47a08de5d95a) - dont send personally identifiable information *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`2dc0285`](https://github.com/rippleFCL/bws-cache/commit/2dc02857e62a9e56e30b28c8e1edac094af37e3b) - incorect comment *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+### :wrench: Chores
+- [`93251b3`](https://github.com/rippleFCL/bws-cache/commit/93251b32954860ecbdf671bf2de856f76f56eff4) - **deps**: update dependency ansible-core to v2.18.7 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`b68f1bb`](https://github.com/rippleFCL/bws-cache/commit/b68f1bb79692e0d68823ebfb2277726ee8126e62) - **deps**: update dependency ruff to v0.12.4 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`8776c10`](https://github.com/rippleFCL/bws-cache/commit/8776c109cf231b3c32ebb60a7c993d9d2e9eebd4) - **config**: migrate config renovate.json *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`ad12671`](https://github.com/rippleFCL/bws-cache/commit/ad12671381be4b901c1424774fe4ebb8dc92bf24) - relock *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`a736cfe`](https://github.com/rippleFCL/bws-cache/commit/a736cfe6e63ab382f4fd1558189e6014fa254ee8) - relock poetry to bws-sdk 0.1.4 *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+
 ## [server-v3.0.1] - 2025-07-15
 ### :bug: Bug Fixes
 - [`fcbe535`](https://github.com/rippleFCL/bws-cache/commit/fcbe53537c9069e9e099e21878dabb8fa26fc3b1) - switched core api error handling to sdk ApiError *(commit by [@rippleFCL](https://github.com/rippleFCL))*
@@ -104,3 +125,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v2.6.1]: https://github.com/rippleFCL/bws-cache/compare/server-v2.6.0...server-v2.6.1
 [server-v3.0.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.2.1...server-v3.0.0
 [server-v3.0.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.0...server-v3.0.1
+[server-v3.1.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.1...server-v3.1.0
