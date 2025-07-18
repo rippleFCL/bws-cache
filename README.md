@@ -68,6 +68,9 @@ services:
 > [!NOTE]
 > If `BWS_REGION` is set to `CUSTOM`, the `BWS_API_URL` and `BWS_IDENTITY_URL` environment variables must be set.
 
+> [!NOTE]
+> Enabling telemetry will only send unhandled exception or application crashes to us to make fixing and diagnosing issues easier and faster. No sensitive data is included.
+
 # How It Works
 
 When a secret is cached, it is cached in memory. Therefore, if the container is restarted, the cache is emptied.
