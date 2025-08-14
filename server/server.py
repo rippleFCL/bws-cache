@@ -4,6 +4,7 @@ import os
 import time
 from typing import Annotated
 
+from bws_sdk import BWSSDKError
 from client import (
     REGION_MAPPING,
     BwsClientManager,
@@ -176,6 +177,9 @@ def handle_api_errors(func):
                 "No region set. Set BWS_DEFAULT_REGION environment variable for a default, provide one in the request via the X-BWS-REGION header or set X-BWS-API-URL and X-BWS-IDENTITY-URL HEADERS",
                 status_code=400,
             )
+        except BWSSDKError as e:
+            logger.warning("BWS SDK error (This is a bug): %s", e)
+            return Response(f"BWS SDK error: {e}", status_code=500)
 
     return wrapper
 
