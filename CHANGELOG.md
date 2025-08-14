@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.2.0] - 2025-08-14
+### :sparkles: New Features
+- [`9030e15`](https://github.com/rippleFCL/bws-cache/commit/9030e152cdc5ac5ed9a3e6b491bf9f457bde2c4a) - added bws sdk error catch all *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+
+### :bug: Bug Fixes
+- [`abbecfe`](https://github.com/rippleFCL/bws-cache/commit/abbecfe126dc7541e9c064bb073579afdc063151) - **deps**: update dependency sentry-sdk to v2.34.1 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+
+### :wrench: Chores
+- [`b921fdc`](https://github.com/rippleFCL/bws-cache/commit/b921fdc6592c1355b37bdd8588534151b8176e86) - **deps**: update dependency ansible-core to v2.19.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`6368abf`](https://github.com/rippleFCL/bws-cache/commit/6368abf78aafd4c73fb9d38cb2bfb1cf3c9fae7e) - **deps**: update dependency ruff to v0.12.8 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`2facdc8`](https://github.com/rippleFCL/bws-cache/commit/2facdc864269399abc20401cb0507e5ab13947b7) - **deps**: update dependency pre-commit to v4.3.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`6c0b1a9`](https://github.com/rippleFCL/bws-cache/commit/6c0b1a9243b9772503f25ffbdc89f83db67b58af) - **deps**: update actions/checkout action to v5 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`7579cba`](https://github.com/rippleFCL/bws-cache/commit/7579cba6cce79e32456c7d7d84d58df5836ceec0) - **deps**: update ansible/ansible-lint action to v25.8.0 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+- [`a1b689f`](https://github.com/rippleFCL/bws-cache/commit/a1b689f4e7210ded649ad0cc4ba9c3fc94bb925d) - bumped bws-sdk to v1 *(commit by [@rippleFCL](https://github.com/rippleFCL))*
+- [`935045a`](https://github.com/rippleFCL/bws-cache/commit/935045a7f6a24b031b5839765842374cba8205b7) - **deps**: update ansible/ansible-lint action to v25.8.1 *(commit by [@renovate[bot]](https://github.com/apps/renovate))*
+
+
 ## [server-v3.1.0] - 2025-07-18
 ### :sparkles: New Features
 - [`f1e6968`](https://github.com/rippleFCL/bws-cache/commit/f1e69681e19ae6d9b7ee15d12733a7e016b10ddf) - added sentry *(commit by [@rippleFCL](https://github.com/rippleFCL))*
@@ -126,3 +143,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v3.0.0]: https://github.com/rippleFCL/bws-cache/compare/ansible-v1.2.1...server-v3.0.0
 [server-v3.0.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.0...server-v3.0.1
 [server-v3.1.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.1...server-v3.1.0
+[server-v3.2.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.1.0...server-v3.2.0
