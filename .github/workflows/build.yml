@@ -20,9 +20,9 @@ env:
 
 jobs:
   lint:
-    uses: ./lint.yml
+    uses: ./.github/workflows/lint.yml
   check-version:
-    uses: ./check-version.yml
+    uses: ./.github/workflows/check-version.yml
   build:
     needs:
       - lint
