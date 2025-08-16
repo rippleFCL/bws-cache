@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.2.1] - 2025-08-16
+### :sparkles: New Features
+- [`b383140`](https://github.com/rippleFCL/bws-cache/commit/b3831406fac8e0c8b11096ba28f0354d86d12102) - sentry addit mate
+
+
 ## [server-v3.2.0] - 2025-08-14
 ### :sparkles: New Features
 - [`9030e15`](https://github.com/rippleFCL/bws-cache/commit/9030e152cdc5ac5ed9a3e6b491bf9f457bde2c4a) - added bws sdk error catch all *(commit by [@rippleFCL](https://github.com/rippleFCL))*
@@ -144,3 +149,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v3.0.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.0...server-v3.0.1
 [server-v3.1.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.1...server-v3.1.0
 [server-v3.2.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.1.0...server-v3.2.0
+[server-v3.2.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.2.0...server-v3.2.1
