@@ -34,6 +34,8 @@ from models import (
 )
 from prom_client import PromMetricsClient
 
+from .version import VERSION
+
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
 
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -76,9 +78,7 @@ try:
     logger.info("region set to %s", DEFAULT_REGION)
 except KeyError:
     if REGION == RegionEnum.CUSTOM:
-        raise ValueError(
-            "BWS_REGION is CUSTOM but BWS_API_URL and BWS_IDENTITY_URL are not set"
-        )
+        raise ValueError("BWS_REGION is CUSTOM but BWS_API_URL and BWS_IDENTITY_URL are not set")
     elif REGION == RegionEnum.NONE:
         DEFAULT_REGION = None
         logger.warning("No default region set")
@@ -93,6 +93,7 @@ if os.environ.get("ENABLE_TELEMETRY", "false").lower() == "true":
         # Don't add data like request headers and IP for users,
         # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
         send_default_pii=False,
+        release=f"bws-cache@{VERSION}",
     )
 
 
@@ -290,9 +291,7 @@ def get_key(
         },
         500: {
             "model": ErrorResponse,
-            "content": {
-                "application/json": {"schema": ErrorResponse.model_json_schema()}
-            },
+            "content": {"application/json": {"schema": ErrorResponse.model_json_schema()}},
             "description": "Internal server error",
         },
     },
