@@ -71,6 +71,10 @@ jobs:
           type=gha,scope=main
         cache-to: type=gha,mode=max
         provenance: false
+    - name: get version
+      id: ev
+      run: echo "::set-output name=version::$(python3 server/version.py)"
+
     - name: Create a Sentry.io release
       uses: getsentry/action-release@v3
       continue-on-error: true
