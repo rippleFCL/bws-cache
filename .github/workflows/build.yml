@@ -19,7 +19,14 @@ env:
   IMAGE_NAME: bws-cache
 
 jobs:
+  lint:
+    uses: ./lint.yml
+  check-version:
+    uses: ./check-version.yml
   build:
+    needs:
+      - lint
+      - check-version
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -64,7 +71,16 @@ jobs:
           type=gha,scope=main
         cache-to: type=gha,mode=max
         provenance: false
-
+    - name: Create a Sentry.io release
+      uses: getsentry/action-release@v3
+      continue-on-error: true
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: beryjuio
+        SENTRY_PROJECT: bws-cache
+        SENTRY_URL: https://sentry.beryju.io
+      with:
+        release: bws-cache@${{ steps.ev.outputs.version }}
   release:
     if: github.event_name == 'push'
     needs: build
