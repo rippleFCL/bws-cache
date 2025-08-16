@@ -85,6 +85,7 @@ jobs:
         SENTRY_URL: https://sentry.beryju.io
       with:
         release: bws-cache@${{ steps.ev.outputs.version }}
+
   release:
     if: github.event_name == 'push'
     needs: build
