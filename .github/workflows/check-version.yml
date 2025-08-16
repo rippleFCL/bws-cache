@@ -13,7 +13,7 @@ jobs:
       - name: Parse bws-cache version
         id: bws_cache_version
         run: |
-          python3 server/version.py
+          echo "::set-output name=result::$(python3 server/version.py)"
       - name: Parse git tag
         id: git_tag
         run: |
