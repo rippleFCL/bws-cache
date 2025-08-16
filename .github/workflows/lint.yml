@@ -6,8 +6,7 @@ on:
     paths-ignore: ["ansible_collection/**"]
   pull_request:
     paths-ignore: ["ansible_collection/**"]
-  workflow_dispatch:
-    
+
 jobs:
   ruff:
     runs-on: ubuntu-latest
