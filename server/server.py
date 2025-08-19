@@ -33,8 +33,7 @@ from models import (
     StatsResponse,
 )
 from prom_client import PromMetricsClient
-
-from .version import VERSION
+from version import VERSION
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING").upper()
 
