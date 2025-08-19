@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [server-v3.2.2] - 2025-08-19
+### :bug: Bug Fixes
+- [`6df7b97`](https://github.com/rippleFCL/bws-cache/commit/6df7b972e63648624dd904929c788a9a4a296672) - oopsies forgot the container runs from inside server
+
+### :wrench: Chores
+- [`506470f`](https://github.com/rippleFCL/bws-cache/commit/506470fbbda5ba3ccf2581666095486fc2569de6) - **version.py**: bump version
+
+
 ## [server-v3.2.1] - 2025-08-16
 ### :sparkles: New Features
 - [`b383140`](https://github.com/rippleFCL/bws-cache/commit/b3831406fac8e0c8b11096ba28f0354d86d12102) - sentry addit mate
@@ -150,3 +158,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [server-v3.1.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.0.1...server-v3.1.0
 [server-v3.2.0]: https://github.com/rippleFCL/bws-cache/compare/server-v3.1.0...server-v3.2.0
 [server-v3.2.1]: https://github.com/rippleFCL/bws-cache/compare/server-v3.2.0...server-v3.2.1
+[server-v3.2.2]: https://github.com/rippleFCL/bws-cache/compare/server-v3.2.1...server-v3.2.2
